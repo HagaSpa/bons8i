@@ -1,0 +1,22 @@
+# Helm
+charts/
+*.tgz
+
+# Kustomize build output
+build/
+
+# Secrets (絶対に commit しない)
+*.secret.yaml
+*-secret.yaml
+secrets/
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Local override
+*.local.yaml
