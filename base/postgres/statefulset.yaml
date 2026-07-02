@@ -30,6 +30,8 @@ spec:
                 secretKeyRef:
                   name: sample-db-auth-nobase64
                   key: password
+            - name: POSTGRES_DB
+              value: appdb
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
