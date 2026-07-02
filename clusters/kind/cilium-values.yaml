@@ -12,3 +12,12 @@ k8sServicePort: 6443
 # Use the Kubernetes API as the source of IPAM pod CIDRs.
 ipam:
   mode: kubernetes
+
+gatewayAPI:
+  enabled: true
+
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
