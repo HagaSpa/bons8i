@@ -21,3 +21,6 @@ hubble:
     enabled: true
   ui:
     enabled: true
+
+ingressController:
+  enabled: true
