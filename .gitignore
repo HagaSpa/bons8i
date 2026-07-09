@@ -8,6 +8,7 @@ build/
 # Secrets (絶対に commit しない)
 *.secret.yaml
 *-secret.yaml
+secret.yaml
 secrets/
 
 # OS
