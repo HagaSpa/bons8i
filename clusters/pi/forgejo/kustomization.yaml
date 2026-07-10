@@ -2,6 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
-  # secret.yaml は Git に載せない（gitignore 済み）→ 手動 apply で作る。将来 SealedSecret 等で Git 管理化
+  - sealedsecret.yaml
   - service.yaml
   - statefulset.yaml
