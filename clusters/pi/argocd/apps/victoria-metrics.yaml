@@ -1,0 +1,116 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: victoria-metrics
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://victoriametrics.github.io/helm-charts
+    chart: victoria-metrics-k8s-stack
+    targetRevision: 0.86.0
+    helm:
+      releaseName: vmks
+      values: |
+        # victoria-metrics-k8s-stack v0.86.0 slim values (single-node Pi 5 8GB, swap 0B)
+        # 方針: retention 7d / PVC 10Gi / memory は requests=limits で青天井回避 / CPU は requests のみ
+
+        victoria-metrics-operator:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 256Mi
+
+        vmsingle:
+          spec:
+            # 単位なしの数字は「月」扱いになるため、接尾辞 d を必ず付ける
+            retentionPeriod: "7d"
+            storage:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 10Gi
+            resources:
+              requests:
+                cpu: 200m
+                memory: 512Mi
+              limits:
+                memory: 512Mi
+
+        vmagent:
+          spec:
+            # default 20s。単ノード Pi では 30s で十分（CPU・書き込み量の節約）
+            scrapeInterval: 30s
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                memory: 256Mi
+
+        vmalert:
+          spec:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 128Mi
+
+        alertmanager:
+          spec:
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                memory: 128Mi
+
+        grafana:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 384Mi
+
+        prometheus-node-exporter:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 64Mi
+
+        kube-state-metrics:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 128Mi
+
+        # kubeadm は control plane の metrics port を 127.0.0.1 に bind するため
+        # クラスタ内から scrape できない → 偽の Down アラートを防ぐため scrape 自体を切る
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+
+        # etcd の VMRule グループは kubeEtcd.enabled に連動しない独立フラグなので明示的に設定をきる
+        defaultRules:
+          groups:
+            etcd:
+              enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true
