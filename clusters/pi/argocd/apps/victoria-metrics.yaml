@@ -68,6 +68,20 @@ spec:
                 memory: 128Mi
               limits:
                 memory: 128Mi
+          config:
+            route:
+              receiver: github
+              group_by: ["alertname"]
+              routes:
+                - matchers:
+                    - alertname=~"Watchdog|InfoInhibitor"
+                  receiver: blackhole
+            receivers:
+              - name: github
+                webhook_configs:
+                  - url: "http://alertmanager-to-github.monitoring.svc:8080/v1/webhook?owner=HagaSpa&repo=bons8i"
+                    send_resolved: true
+              - name: blackhole
 
         grafana:
           admin:
