@@ -70,6 +70,10 @@ spec:
                 memory: 128Mi
 
         grafana:
+          admin:
+            existingSecret: vmks-grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           resources:
             requests:
               cpu: 100m
@@ -107,6 +111,16 @@ spec:
           groups:
             etcd:
               enabled: false
+  ignoreDifferences:
+    - kind: Secret
+      name: vmks-victoria-metrics-operator-validation
+      jsonPointers:
+        - /data
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: vmks-victoria-metrics-operator-admission
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -114,3 +128,4 @@ spec:
     syncOptions:
       - ServerSideApply=true
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
