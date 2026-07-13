@@ -149,7 +149,7 @@ pub async fn fetch_issue_stats(
         .filter(|i| i.pull_request.is_none())
         .collect();
 
-    let open_count = issues.iter().filter(|i| i.state == "open").count() as u64;
+    let open_count = issues.iter().filter(|i| i.state == "open").count() as u32;
     let closed_30d: Vec<_> = issues
         .iter()
         .filter(|i| i.closed_at.is_some_and(|c| c > cutoff))
@@ -164,7 +164,7 @@ pub async fn fetch_issue_stats(
 
     Ok(IssueStats {
         open_count,
-        closed_count_30d: closed_30d.len() as u64,
+        closed_count_30d: closed_30d.len() as u32,
         avg_hours_to_close_30d: avg_hours,
     })
 }
