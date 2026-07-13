@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: local-path
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/HagaSpa/bons8i.git
+    targetRevision: main
+    path: clusters/pi/local-path
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: local-path-storage
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
