@@ -120,10 +120,18 @@ spec:
         kubeEtcd:
           enabled: false
 
-        # etcd の VMRule グループは kubeEtcd.enabled に連動しない独立フラグなので明示的に設定をきる
+        # scrape を切った control plane 系 + データ源が無い recording は rule group ごと切る（absent() ベースの Down アラート対策）
         defaultRules:
           groups:
             etcd:
+              enabled: false
+            kubernetes-system-scheduler:
+              enabled: false
+            kubernetes-system-controller-manager:
+              enabled: false
+            kube-scheduler.rules:
+              enabled: false
+            k8s.rules.container_cpu_limits:
               enabled: false
   ignoreDifferences:
     - kind: Secret
