@@ -10,15 +10,17 @@ cluster (`kubeadm`, Ubuntu Server 24.04 arm64).
 Editable source: [`bons8i-RaspberryPi5.architecture.drawio`](bons8i-RaspberryPi5.architecture.drawio)
 (open with [draw.io](https://app.diagrams.net/) / File > Open From > Device).
 
-Everything running on the cluster is declared in this repository and
+Every Kubernetes resource on the cluster is declared in this repository and
 reconciled by ArgoCD (pull-based GitOps) — there is no remaining imperative
-workload.
+Kubernetes workload. The one inherent exception is the cluster substrate
+itself (`kubeadm`, `containerd`): it sits below the Kubernetes API, so it is
+a one-time imperative bootstrap step by nature, not a GitOps target.
 
 ## Components
 
 | Component | Purpose | Delivery method | Status |
 |---|---|---|---|
-| `kubeadm` + `containerd` | Cluster bootstrap: control plane, kubelet, CRI | Manual, one-time (see [Bootstrap history](#bootstrap-history-pre-gitops)) | Not GitOps-managed (cluster substrate) |
+| `kubeadm` + `containerd` | Cluster bootstrap: control plane, kubelet, CRI | Manual, one-time (predates Kubernetes; not a GitOps target) | Not GitOps-managed (cluster substrate) |
 | **Cilium** 1.19.5 | CNI, kube-proxy replacement (eBPF) | ArgoCD Helm source Application (values inline) | Adopted from an imperative `helm` release |
 | **local-path-provisioner** v0.0.36 | Default `StorageClass`, dynamic PV provisioning from node-local disk | ArgoCD git source Application, Kustomize **remote base** pointing at the upstream repo | Adopted from an imperative `kubectl apply` |
 | **ArgoCD** | GitOps controller | Self-managed: git source Application, Kustomize remote base pointing at the official install manifests | Bootstrap |
@@ -51,69 +53,3 @@ workload.
   copy of upstream. Plain YAML without a `kustomization.yaml`, or fully
   custom manifests (e.g. `alertmanager-to-github`), are kept as regular
   Kustomize resources in this repo.
-
-## Bootstrap history (pre-GitOps)
-
-The steps below describe how the cluster substrate (`kubeadm`, `containerd`,
-initial Cilium install) was built imperatively, before GitOps was adopted.
-They are kept for reference; Cilium itself is now managed by ArgoCD (see the
-Components table above).
-
-The cluster is created with `kubeadm init --pod-network-cidr=10.244.0.0/16`.
-Unlike kind, `kubeadm` installs kube-proxy, so it must be removed after Cilium
-takes over Service routing.
-
-> Replace `<node-ip>` with the API server address used at `kubeadm init`
-> (`--apiserver-advertise-address`), which also appears as `k8sServiceHost` in
-> `cilium-values.yaml`.
-
-### Install Cilium
-
-Cilium is pinned to **1.19.5** (latest stable; the 1.16.x line is EOL).
-
-```bash
-helm repo add cilium https://helm.cilium.io/
-helm repo update
-helm install cilium cilium/cilium --version 1.19.5 \
-  --namespace kube-system \
-  -f clusters/pi/cilium-values.yaml
-```
-
-After the agent rolls out, the node moves to `Ready` and
-`/etc/cni/net.d/05-cilium.conflist` appears.
-
-### Remove kube-proxy
-
-Delete the kube-proxy addon left by `kubeadm init`, then clear its `iptables`
-rules by rebooting the node (simplest on a single node):
-
-```bash
-kubectl -n kube-system delete ds kube-proxy
-kubectl -n kube-system delete cm kube-proxy
-sudo reboot
-```
-
-### Verify
-
-```bash
-kubectl get nodes                                  # Ready
-sudo iptables-save | grep -c KUBE-SVC              # 0 (kube-proxy Service chains gone)
-kubectl -n kube-system exec ds/cilium -- cilium-dbg status | grep -i kubeproxy
-#   KubeProxyReplacement: True [eth0 <node-ip> ... (Direct Routing)]
-
-# allow workloads on the single (control-plane) node
-kubectl taint nodes <node-name> node-role.kubernetes.io/control-plane:NoSchedule-
-
-# end-to-end: a pod resolving a Service ClusterIP proves routing works without kube-proxy
-kubectl run test --image=nginx --restart=Never
-kubectl run dns --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes
-kubectl delete pod test
-```
-
-### Notes
-
-- The single node runs the control plane and workloads (the control-plane taint
-  is removed). A second node can join later without downtime.
-- The Cilium operator defaults to 2 replicas with anti-affinity, so one replica
-  stays `Pending` on a single-node cluster. `operator.replicas: 1` is set in
-  `cilium-values.yaml` to clear it.
