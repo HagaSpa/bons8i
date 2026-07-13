@@ -1,0 +1,175 @@
+/* 単一テーマ。bons8i のイメージカラー = 緑をごく薄く背景に敷き（status.claude.com の
+   暖色版と同じ手法の緑版）、純白カードを浮かべる。緑/赤のステータス色が主役 */
+:root {
+  --text: #55605a;
+  --text-h: #17201b;
+  --bg: #f4faf6;
+  --card-bg: #ffffff;
+  --border: #dfeae3;
+  --ok: #15803d;
+  --ok-bg: rgba(22, 163, 74, 0.12);
+  --bad: #dc2626;
+  --bad-bg: rgba(220, 38, 38, 0.12);
+  --dim: #78716c;
+  --dim-bg: rgba(120, 113, 108, 0.12);
+
+  font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 20px 32px;
+}
+
+h1 {
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.5px;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--dim);
+  margin: 36px 0 12px;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.subtitle {
+  margin: 0 0 24px;
+}
+
+.section-note {
+  margin: -4px 0 12px;
+  font-size: 14px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 10px;
+}
+
+.badge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badge.ok {
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.badge.bad {
+  color: var(--bad);
+  background: var(--bad-bg);
+}
+
+.badge.dim {
+  color: var(--dim);
+  background: var(--dim-bg);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.card-label {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+
+.card-hint {
+  font-size: 12px;
+  color: var(--dim);
+  margin-top: 4px;
+}
+
+.alerts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--bad-bg);
+  border: 1px solid var(--bad);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.severity {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--bad);
+}
+
+.alert-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.alert-summary,
+.alert-since {
+  font-size: 14px;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--dim);
+}

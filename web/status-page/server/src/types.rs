@@ -53,8 +53,9 @@ pub struct MetricCards {
 #[ts(export, export_to = "../../frontend/src/generated/")]
 #[serde(rename_all = "camelCase")]
 pub struct IssueStats {
-    pub open_count: u64,
-    pub closed_count_30d: u64,
+    // u32 なのは ts-rs の写像のため（u64 は bigint になるが JSON.parse は number を返す）
+    pub open_count: u32,
+    pub closed_count_30d: u32,
     /// 直近 30 日にクローズされた issue の平均クローズ時間（時間単位）
     pub avg_hours_to_close_30d: Option<f64>,
 }
