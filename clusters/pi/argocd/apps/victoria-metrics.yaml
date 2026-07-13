@@ -133,6 +133,8 @@ spec:
               enabled: false
             k8s.rules.container_cpu_limits:
               enabled: false
+            kube-prometheus-general.rules:
+              enabled: false
   ignoreDifferences:
     - kind: Secret
       name: vmks-victoria-metrics-operator-validation
