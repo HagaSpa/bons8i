@@ -25,6 +25,19 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
+  ignoreDifferences:
+    # cilium.io/helm-template-non-idempotent: 'true' が付く Secret。
+    # helm template はクラスタ状態を lookup しないため SYNC のたびに新規生成してしまう。
+    - kind: Secret
+      name: cilium-ca
+      namespace: kube-system
+      jsonPointers:
+        - /data
+    - kind: Secret
+      name: hubble-server-certs
+      namespace: kube-system
+      jsonPointers:
+        - /data
   syncPolicy:
     syncOptions:
       - ServerSideApply=true
