@@ -1,26 +1,73 @@
 # clusters/pi/
 
-Bootstrap materials for the single-node **Raspberry Pi 5** cluster
-(`kubeadm`, Ubuntu Server 24.04 arm64).
+Bootstrap materials and GitOps manifests for the single-node **Raspberry Pi 5**
+cluster (`kubeadm`, Ubuntu Server 24.04 arm64).
 
-| File | Purpose |
-|---|---|
-| `cilium-values.yaml` | Cilium Helm values (CNI-first minimal set) |
+## Architecture
+
+![Pi cluster architecture](bons8i-RaspberryPi5.architecture.drawio.svg)
+
+Editable source: [`bons8i-RaspberryPi5.architecture.drawio`](bons8i-RaspberryPi5.architecture.drawio)
+(open with [draw.io](https://app.diagrams.net/) / File > Open From > Device).
+
+Everything running on the cluster is declared in this repository and
+reconciled by ArgoCD (pull-based GitOps) — there is no remaining imperative
+workload.
+
+## Components
+
+| Component | Purpose | Delivery method | Status |
+|---|---|---|---|
+| `kubeadm` + `containerd` | Cluster bootstrap: control plane, kubelet, CRI | Manual, one-time (see [Bootstrap history](#bootstrap-history-pre-gitops)) | Not GitOps-managed (cluster substrate) |
+| **Cilium** 1.19.5 | CNI, kube-proxy replacement (eBPF) | ArgoCD Helm source Application (values inline) | Adopted from an imperative `helm` release |
+| **local-path-provisioner** v0.0.36 | Default `StorageClass`, dynamic PV provisioning from node-local disk | ArgoCD git source Application, Kustomize **remote base** pointing at the upstream repo | Adopted from an imperative `kubectl apply` |
+| **ArgoCD** | GitOps controller | Self-managed: git source Application, Kustomize remote base pointing at the official install manifests | Bootstrap |
+| **sealed-secrets** | Encrypts secrets so they can be committed to git | ArgoCD Helm source Application | Native GitOps |
+| **VictoriaMetrics k8s stack** (vmsingle, vmagent, vmalert, alertmanager, kube-state-metrics, node-exporter, Grafana) | Metrics collection, alert evaluation, dashboards | ArgoCD Helm source Application (values inline) | Native GitOps |
+| **alertmanager-to-github** ([pfnet-research](https://github.com/pfnet-research/alertmanager-to-github)) | Turns firing Alertmanager alerts into GitHub Issues with an open/close/reopen lifecycle | ArgoCD git source Application (custom Deployment/Service manifests) | Native GitOps |
+| **Tailscale** | Remote ssh / kubectl access for day-to-day operations | Installed on the host, outside the cluster | N/A |
+
+## Operations
+
+- **Alert-to-issue pipeline**: `VMRule → vmalert → Alertmanager → alertmanager-to-github → GitHub Issue`.
+  An open issue means an alert is *currently firing*; it auto-closes when the
+  alert resolves and reopens on recurrence. The steady-state goal is **zero
+  open issues** — if one is open, it's a real problem.
+- **Real-time notification**: the GitHub repository is subscribed in a
+  personal Slack workspace via GitHub's official Slack app
+  (`/github subscribe <owner>/<repo> issues`). Zero custom code — no
+  webhook receiver runs on the cluster.
+- **Remote access**: Tailscale is used for day-to-day `ssh`/`kubectl`, so no
+  inbound port is exposed to the internet.
+- **Change control**: the `main` branch is protected on GitHub (no direct
+  pushes), and a local pre-commit hook additionally blocks committing
+  directly to `main`/`master` on this machine. All changes land through a
+  PR.
+- **Manifest convention**: when upstream ships a Helm chart, it's adopted as
+  an ArgoCD Helm source Application with values inlined. When upstream ships
+  plain YAML and publishes a `kustomization.yaml`, it's adopted via a
+  Kustomize **remote base** (see `local-path/` and `argocd/bootstrap/`) so
+  only the local customization (as a patch) lives in this repo — not a full
+  copy of upstream. Plain YAML without a `kustomization.yaml`, or fully
+  custom manifests (e.g. `alertmanager-to-github`), are kept as regular
+  Kustomize resources in this repo.
+
+## Bootstrap history (pre-GitOps)
+
+The steps below describe how the cluster substrate (`kubeadm`, `containerd`,
+initial Cilium install) was built imperatively, before GitOps was adopted.
+They are kept for reference; Cilium itself is now managed by ArgoCD (see the
+Components table above).
 
 The cluster is created with `kubeadm init --pod-network-cidr=10.244.0.0/16`.
 Unlike kind, `kubeadm` installs kube-proxy, so it must be removed after Cilium
 takes over Service routing.
 
-The values are intentionally minimal for the first install; `gatewayAPI`,
-`hubble`, and `ingressController` are enabled later via `helm upgrade` (the
-Gateway API CRDs must be installed first). `ipam.mode: kubernetes` makes Cilium
-read the pod CIDR that `kubeadm` assigned to the node.
-
 > Replace `<node-ip>` with the API server address used at `kubeadm init`
 > (`--apiserver-advertise-address`), which also appears as `k8sServiceHost` in
 > `cilium-values.yaml`.
 
-## Install Cilium
+### Install Cilium
 
 Cilium is pinned to **1.19.5** (latest stable; the 1.16.x line is EOL).
 
@@ -35,7 +82,7 @@ helm install cilium cilium/cilium --version 1.19.5 \
 After the agent rolls out, the node moves to `Ready` and
 `/etc/cni/net.d/05-cilium.conflist` appears.
 
-## Remove kube-proxy
+### Remove kube-proxy
 
 Delete the kube-proxy addon left by `kubeadm init`, then clear its `iptables`
 rules by rebooting the node (simplest on a single node):
@@ -46,7 +93,7 @@ kubectl -n kube-system delete cm kube-proxy
 sudo reboot
 ```
 
-## Verify
+### Verify
 
 ```bash
 kubectl get nodes                                  # Ready
@@ -63,10 +110,10 @@ kubectl run dns --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubern
 kubectl delete pod test
 ```
 
-## Notes
+### Notes
 
 - The single node runs the control plane and workloads (the control-plane taint
   is removed). A second node can join later without downtime.
 - The Cilium operator defaults to 2 replicas with anti-affinity, so one replica
-  stays `Pending` on a single-node cluster. Set `operator.replicas: 1` via
-  `helm upgrade` to clear it (optional).
+  stays `Pending` on a single-node cluster. `operator.replicas: 1` is set in
+  `cilium-values.yaml` to clear it.
