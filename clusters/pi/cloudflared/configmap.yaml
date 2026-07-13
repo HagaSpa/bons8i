@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: cloudflared
+data:
+  config.yaml: |
+    tunnel: b8514e4f-a617-47e5-87d9-dafa1f420926
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    ingress:
+      - hostname: grafana.hagaspa.com
+        service: http://vmks-grafana.monitoring.svc.cluster.local:80
+      - service: http_status:404
