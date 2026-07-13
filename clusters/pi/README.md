@@ -5,49 +5,10 @@ cluster (`kubeadm`, Ubuntu Server 24.04 arm64).
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph external["External"]
-        laptop["Operator laptop"]
-        slack["Personal Slack workspace"]
-        repo["GitHub repo\n(HagaSpa/bons8i)"]
-    end
+![Pi cluster architecture](bons8i-RaspberryPi5.architecture.drawio.svg)
 
-    subgraph pi["Raspberry Pi 5 — single-node kubeadm cluster"]
-        tailscale["Tailscale\n(remote ssh / kubectl)"]
-
-        subgraph cni["Networking"]
-            cilium["Cilium 1.19.5\nCNI + kube-proxy replacement (eBPF)"]
-        end
-
-        subgraph gitops["GitOps control plane"]
-            argocd["ArgoCD\n(self-managed, App of Apps)"]
-            sealedsecrets["sealed-secrets controller"]
-        end
-
-        subgraph storage["Storage"]
-            localpath["local-path-provisioner\n(default StorageClass)"]
-        end
-
-        subgraph observability["Observability"]
-            vmstack["VictoriaMetrics k8s stack\n(vmagent / vmalert / alertmanager / grafana)"]
-            atg["alertmanager-to-github"]
-        end
-    end
-
-    laptop -- "ssh / kubectl" --> tailscale
-
-    repo -- "Helm charts + git manifests\n(pull-based sync)" --> argocd
-    argocd -- manages --> cilium
-    argocd -- manages --> localpath
-    argocd -- manages --> sealedsecrets
-    argocd -- manages --> vmstack
-    argocd -- manages --> atg
-
-    vmstack -- "firing alert (webhook)" --> atg
-    atg -- "open / close / reopen issue" --> repo
-    repo -- "issue event" --> slack
-```
+Editable source: [`bons8i-RaspberryPi5.architecture.drawio`](bons8i-RaspberryPi5.architecture.drawio)
+(open with [draw.io](https://app.diagrams.net/) / File > Open From > Device).
 
 Everything running on the cluster is declared in this repository and
 reconciled by ArgoCD (pull-based GitOps) — there is no remaining imperative
