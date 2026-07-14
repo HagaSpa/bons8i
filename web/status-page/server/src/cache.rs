@@ -3,11 +3,9 @@ use std::time::{Duration, Instant};
 
 use tokio::sync::Mutex;
 
-/// TTL 付きの単純なキャッシュ。
-///
-/// - リフレッシュ中はロックを保持する（single-flight）: 公開ページに同時アクセスが
-///   殺到しても上流へのリクエストは 1 本にまとまる = DoS 増幅対策の核
-/// - リフレッシュ失敗時は期限切れでも最後の成功値を返す（上流の一時障害でページを落とさない）
+/// TTL 付きキャッシュ。リフレッシュ中はロックを保持する（single-flight =
+/// 同時アクセスが殺到しても上流へのリクエストは 1 本）。リフレッシュ失敗時は
+/// 期限切れでも最後の成功値を返す。
 pub struct Cache<T> {
     ttl: Duration,
     inner: Mutex<Option<Entry<T>>>,
@@ -45,7 +43,6 @@ impl<T: Clone> Cache<T> {
                 });
                 Some(value)
             }
-            // 失敗時: stale があればそれを返す（fetched_at は更新しない = 次回また試行）
             None => guard.as_ref().map(|e| e.value.clone()),
         }
     }

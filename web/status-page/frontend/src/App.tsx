@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { StatusResponse } from "./generated/StatusResponse";
 import type { FiringAlert } from "./generated/FiringAlert";
 
-// BFF 側のクラスタキャッシュ TTL と同じ周期でポーリング
+// BFF のクラスタキャッシュ TTL と同周期
 const REFRESH_MS = 60_000;
 
 const REPO_URL = "https://github.com/HagaSpa/bons8i";

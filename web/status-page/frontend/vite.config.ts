@@ -1,8 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// ローカル開発: Rust BFF を `LISTEN_ADDR=127.0.0.1:18080 cargo run` で起動しておく
-// （ポートを変えた場合は VITE_API_TARGET で上書き）
+// /api は起動済みの BFF（`LISTEN_ADDR=127.0.0.1:18080 cargo run`）へ流す
 export default defineConfig({
   plugins: [react()],
   server: {

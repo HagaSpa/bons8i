@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::types::{FiringAlert, IssueStats, MetricCards};
 
-/// クエリはすべてこのコードに固定。ユーザー入力は一切受けない（BFF の設計原則）。
+// クエリはコードに固定。ユーザー入力は上流に一切届かない
 const Q_NODE_TEMP: &str = "max(node_hwmon_temp_celsius)";
 const Q_CPU_PERCENT: &str =
     r#"100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))"#;
@@ -12,7 +12,6 @@ const Q_MEM_PERCENT: &str =
 const Q_UPTIME_SECONDS: &str = "time() - max(node_boot_time_seconds)";
 const Q_RUNNING_PODS: &str = r#"sum(kube_pod_status_phase{phase="Running"})"#;
 
-/// Prometheus 互換 query API のレスポンス（必要な部分だけデシリアライズ）
 #[derive(Deserialize)]
 struct PromResponse {
     data: PromData,
@@ -25,7 +24,7 @@ struct PromData {
 
 #[derive(Deserialize)]
 struct PromResult {
-    /// [unix_timestamp, "値の文字列"] の 2 要素
+    // [unix_timestamp, "値の文字列"]
     value: (f64, String),
 }
 
@@ -64,7 +63,6 @@ pub async fn fetch_metrics(client: &reqwest::Client, vm_base: &str) -> MetricCar
     }
 }
 
-/// Alertmanager API v2 の alert オブジェクト（必要な部分だけ）
 #[derive(Deserialize)]
 struct AmAlert {
     labels: std::collections::HashMap<String, String>,
@@ -73,7 +71,7 @@ struct AmAlert {
     starts_at: Option<String>,
 }
 
-/// 発火中アラートの取得。Watchdog は「常時発火が正常」の死活監視用アラートなので除外する。
+/// Watchdog は「常時発火が正常」の死活監視用アラートなので除外する。
 pub async fn fetch_alerts(
     client: &reqwest::Client,
     am_base: &str,
@@ -111,17 +109,16 @@ pub async fn fetch_alerts(
         .collect())
 }
 
-/// GitHub Issues API の issue オブジェクト（必要な部分だけ）
 #[derive(Deserialize)]
 struct GhIssue {
     state: String,
     created_at: DateTime<Utc>,
     closed_at: Option<DateTime<Utc>>,
-    /// PR は issues エンドポイントに混ざって返るのでこのキーの有無で除外する
+    // PR も issues エンドポイントに混ざって返る。このキーの有無で除外する
     pull_request: Option<serde_json::Value>,
 }
 
-/// public リポの公開データのみ・無認証（60 req/h per IP、呼び出し元の 5 分キャッシュで最大 12 req/h）。
+/// 無認証（public データのみ）。60 req/h per IP の制限は呼び出し元のキャッシュで吸収する。
 pub async fn fetch_issue_stats(
     client: &reqwest::Client,
     repo: &str,
