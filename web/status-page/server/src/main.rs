@@ -6,16 +6,23 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::extract::State;
-use axum::response::{Html, Json};
+use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::http::{StatusCode, Uri};
+use axum::response::{IntoResponse, Json, Response};
 use axum::routing::get;
 use axum::Router;
+use rust_embed::RustEmbed;
 
 use cache::Cache;
 use types::{FiringAlert, MetricCards, Overall, StatusResponse};
 
-/// クラスタ内上流（VM / Alertmanager）のキャッシュ TTL
+// コンパイルには frontend/dist/ の実在が必要（先に `npm run build` を実行しておく）
+#[derive(RustEmbed)]
+#[folder = "../frontend/dist/"]
+struct Assets;
+
 const CLUSTER_TTL: Duration = Duration::from_secs(60);
-/// GitHub API のキャッシュ TTL（無認証 60 req/h 制限に対し最大 12 req/h に抑える）
+// GitHub は無認証 60 req/h 制限があるので長めに
 const GITHUB_TTL: Duration = Duration::from_secs(300);
 
 struct AppState {
@@ -23,7 +30,6 @@ struct AppState {
     vm_url: String,
     am_url: String,
     github_repo: String,
-    /// アラートとメトリクスをまとめて 1 エントリでキャッシュ
     cluster_cache: Cache<(Option<Vec<FiringAlert>>, MetricCards)>,
     issue_cache: Cache<types::IssueStats>,
 }
@@ -46,7 +52,7 @@ async fn main() {
             .timeout(Duration::from_secs(10))
             .build()
             .expect("reqwest client"),
-        // ローカル開発は kubectl port-forward 前提のデフォルト。本番はマニフェストの env で Service 名を注入
+        // デフォルトはローカル開発用（kubectl port-forward 前提）。本番は env で Service 名を注入
         vm_url: env_or("VM_URL", "http://127.0.0.1:8428"),
         am_url: env_or("ALERTMANAGER_URL", "http://127.0.0.1:9093"),
         github_repo: env_or("GITHUB_REPO", "HagaSpa/bons8i"),
@@ -55,9 +61,9 @@ async fn main() {
     });
 
     let app = Router::new()
-        .route("/", get(index))
         .route("/healthz", get(|| async { "ok" }))
         .route("/api/status", get(api_status))
+        .fallback(static_handler)
         .with_state(state.clone());
 
     let addr = env_or("LISTEN_ADDR", "0.0.0.0:8080");
@@ -71,9 +77,27 @@ async fn main() {
         .expect("server");
 }
 
-/// Day 2 で React ビルド成果物（rust-embed）に置き換えるまでの暫定トップページ
-async fn index() -> Html<&'static str> {
-    Html("<!doctype html><title>bons8i status</title><p>bons8i status — frontend coming soon. See <a href=\"/api/status\">/api/status</a>.")
+/// 同梱した React 成果物の配信。Vite の assets/ はファイル名にハッシュが入るので
+/// immutable、index.html は no-cache（デプロイ即反映）。
+async fn static_handler(uri: Uri) -> Response {
+    let path = uri.path().trim_start_matches('/');
+    let path = if path.is_empty() { "index.html" } else { path };
+    match Assets::get(path) {
+        Some(file) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            let cache = if path.starts_with("assets/") {
+                "public, max-age=31536000, immutable"
+            } else {
+                "no-cache"
+            };
+            (
+                [(CONTENT_TYPE, mime.as_ref()), (CACHE_CONTROL, cache)],
+                file.data,
+            )
+                .into_response()
+        }
+        None => (StatusCode::NOT_FOUND, "not found").into_response(),
+    }
 }
 
 async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> {

@@ -4,12 +4,4 @@ import type { IssueStats } from "./IssueStats";
 import type { MetricCards } from "./MetricCards";
 import type { Overall } from "./Overall";
 
-/**
- * `/api/status` のレスポンス。フロントの型は ts-rs がここから生成する
- * （`cargo test` 時に `frontend/src/generated/` へ出力）。
- */
-export type StatusResponse = { overall: Overall, firingAlerts: Array<FiringAlert>, metrics: MetricCards, 
-/**
- * GitHub API の取得失敗時は null（ページ全体は生かす）
- */
-issues: IssueStats | null, generatedAt: string, };
+export type StatusResponse = { overall: Overall, firingAlerts: Array<FiringAlert>, metrics: MetricCards, issues: IssueStats | null, generatedAt: string, };
