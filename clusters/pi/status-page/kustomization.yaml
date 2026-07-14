@@ -4,3 +4,7 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - service.yaml
+
+images:
+  - name: ghcr.io/hagaspa/bons8i/status-page
+    newTag: a329b6eed5b8c9b4a603f0f90cb01ff0b9028763
