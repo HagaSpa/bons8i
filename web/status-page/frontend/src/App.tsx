@@ -162,7 +162,7 @@ export default function App() {
       <footer>
         {status && <span>Updated {fmt.time(status.generatedAt)} · refreshes every 60 s</span>}
         <span>
-          Built with Rust + React · Source on{" "}
+          Built with Rust + React · Deployed with Argo CD · Source on{" "}
           <a href={`${REPO_URL}/tree/main/web/status-page`}>GitHub</a>
         </span>
       </footer>
