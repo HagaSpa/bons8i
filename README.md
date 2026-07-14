@@ -1,59 +1,51 @@
 # bons8i
 
-Kubernetes manifests and cluster bootstrap materials for a personal home lab,
-managed with Kustomize across three environments: **kind** (local), **GKE**, and
-a single-node **Raspberry Pi 5** cluster built with `kubeadm`.
-
-## Stack
-
-A small two-tier workload used to exercise Workloads / Networking / Storage:
-
-- **PostgreSQL** — `StatefulSet` + headless `Service` + `Secret`, with a
-  `PersistentVolumeClaim` for data (`base/postgres/`).
-- **adminer** — a `Deployment` + `Service` acting as a web client for the
-  database (`base/web/`).
-- **Gateway API** — a `Gateway` + `HTTPRoute` exposing adminer through the
-  Cilium `GatewayClass` (`base/gateway/`). An equivalent `Ingress` is kept for
-  reference but excluded from the Kustomize build.
-
-## Networking
-
-All clusters run **[Cilium](https://cilium.io/)** as the CNI with
-**kube-proxy replacement** enabled (`kubeProxyReplacement: true`), so Service
-routing is handled by Cilium's eBPF datapath instead of `iptables`/`kube-proxy`.
-Cilium also provides the Gateway API and Ingress implementations, so no separate
-L7 controller is needed.
+GitOps repository for a single-node **Raspberry Pi 5** Kubernetes cluster built
+with `kubeadm`. It holds the cluster's platform manifests, the Argo CD
+`Application` definitions that deploy them, and the source code of the public
+status page served at [bons8i.hagaspa.com](https://bons8i.hagaspa.com).
 
 ## Layout
 
 ```
 .
-├── base/         # Environment-agnostic manifests (Kustomize base)
-├── overlays/     # Per-environment composition / patches (kind / gke / pi)
-└── clusters/     # Cluster bootstrap materials (kind config, Cilium values, Terraform)
+├── clusters/pi/   # Cluster manifests + Argo CD Applications (App of Apps)
+├── web/           # Application source (status page: Rust BFF + React)
+└── docs/          # Postmortems
 ```
 
-- `base/` holds shared definitions. See `base/README.md`.
-- `overlays/<env>/` composes the base resources per environment and is where
-  environment-specific patches (StorageClass name, replicas, resource requests)
-  are layered on top.
-- `clusters/<env>/` holds how each cluster is *created* (not the app manifests).
-  Each has its own README with the bootstrap steps:
-  - [`clusters/kind/`](clusters/kind/README.md) — local kind cluster
-  - [`clusters/pi/`](clusters/pi/README.md) — single-node Raspberry Pi cluster
-  - [`clusters/gke/`](clusters/gke/README.md) — GKE (Terraform)
+See [`clusters/pi/README.md`](clusters/pi/README.md) for the component list and
+architecture diagram.
 
-## Deploy the workload
+## Platform
 
-Render and apply the workload for an environment via its overlay:
+- **GitOps** — [Argo CD](https://argo-cd.readthedocs.io/) (self-managed,
+  App of Apps). Every workload is declared as an `Application` under
+  `clusters/pi/argocd/apps/` and synced from this repository.
+- **CNI** — [Cilium](https://cilium.io/) with kube-proxy replacement enabled:
+  Service routing is handled by the eBPF datapath instead of
+  `iptables`/`kube-proxy`. Cilium also provides the Gateway API and Ingress
+  implementations, so no separate L7 controller is needed.
+- **Monitoring** — VictoriaMetrics k8s stack (vmsingle / vmagent / vmalert /
+  Alertmanager / Grafana). Alerts are routed to GitHub Issues via
+  alertmanager-to-github, so an open issue means an ongoing incident.
+- **Secrets** — sealed-secrets. Encrypted `SealedSecret` resources are safe to
+  commit; the in-cluster controller decrypts them.
+- **Edge** — Cloudflare Tunnel (outbound-only connector, no open inbound
+  ports) + Cloudflare Access for authentication in front of private apps.
+- **Storage** — local-path-provisioner, consumed via the upstream kustomization
+  as a remote base with local patches.
 
-```bash
-# preview
-kubectl kustomize overlays/kind
+## Continuous delivery (status page)
 
-# apply
-kubectl apply -k overlays/kind
-```
+Merging a change under `web/status-page/` deploys it without manual steps:
 
-Cluster creation and CNI installation are separate from the workload apply —
-see the per-cluster READMEs under `clusters/`.
+1. GitHub Actions builds a `linux/arm64` image on a native arm64 runner and
+   pushes it to `ghcr.io` tagged with the git SHA.
+2. The same workflow updates the image tag in
+   `clusters/pi/status-page/kustomization.yaml` via `kustomize edit set image`
+   and opens a `deploy`-labeled PR that auto-merges.
+3. Argo CD auto-syncs the application (`prune` + `selfHeal`); rollback is a
+   `git revert` of the deploy commit.
+
+Platform applications are synced manually after reviewing the diff.
