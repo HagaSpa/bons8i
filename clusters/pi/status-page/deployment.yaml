@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: status-page
+  namespace: status-page
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: status-page
+  template:
+    metadata:
+      labels:
+        app: status-page
+    spec:
+      containers:
+        - name: status-page
+          image: ghcr.io/hagaspa/bons8i/status-page:a329b6eed5b8c9b4a603f0f90cb01ff0b9028763
+          env:
+            - name: VM_URL
+              value: http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
+            - name: ALERTMANAGER_URL
+              value: http://vmalertmanager-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:9093
+            - name: GITHUB_REPO
+              value: HagaSpa/bons8i
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 32Mi
+          # 外部公開される唯一のワークロードなので最小権限で固める
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
