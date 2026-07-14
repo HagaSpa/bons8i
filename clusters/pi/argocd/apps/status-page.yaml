@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: status-page
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/HagaSpa/bons8i.git
+    targetRevision: main
+    path: clusters/pi/status-page
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: status-page
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
