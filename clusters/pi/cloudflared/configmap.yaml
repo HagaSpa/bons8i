@@ -10,4 +10,6 @@ data:
     ingress:
       - hostname: grafana.hagaspa.com
         service: http://vmks-grafana.monitoring.svc.cluster.local:80
+      - hostname: bons8i.hagaspa.com
+        service: http://status-page.status-page.svc.cluster.local:80
       - service: http_status:404
