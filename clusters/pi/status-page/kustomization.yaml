@@ -1,10 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
-  - deployment.yaml
-  - service.yaml
+- namespace.yaml
+- deployment.yaml
+- service.yaml
 
 images:
-  - name: ghcr.io/hagaspa/bons8i/status-page
-    newTag: a329b6eed5b8c9b4a603f0f90cb01ff0b9028763
+- name: ghcr.io/hagaspa/bons8i/status-page
+  newTag: 362cb44b40ffbc3d6a75e12eb0860b394d63a0aa
