@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Asia/Tokyo",
+  "prConcurrentLimit": 3,
+  "argocd": {
+    "managerFilePatterns": ["/^clusters/pi/argocd/apps/.+\\.yaml$/"]
+  },
+  "packageRules": [
+    {
+      "description": "status page image is managed by the CD pipeline (git SHA tags)",
+      "matchPackageNames": ["ghcr.io/hagaspa/bons8i/status-page"],
+      "enabled": false
+    },
+    {
+      "description": "group app-level minor/patch updates into a single PR",
+      "matchManagers": ["npm", "cargo", "github-actions", "dockerfile"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "app minor/patch dependencies"
+    }
+  ]
+}
