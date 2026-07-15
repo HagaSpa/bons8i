@@ -8,7 +8,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # rust:alpine の既定ターゲットは musl = 静的リンク。ring のビルドに musl-dev が要る
-FROM rust:1.95-alpine AS server
+FROM rust:1.97-alpine AS server
 RUN apk add --no-cache musl-dev
 WORKDIR /app/server
 # 依存だけ先にビルドしてレイヤーキャッシュに乗せる
