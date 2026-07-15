@@ -130,6 +130,9 @@ pub async fn fetch_issue_stats(
         .header("Accept", "application/vnd.github+json")
         .query(&[
             ("state", "all"),
+            // ATG が付与する alert ラベルで絞る。Renovate の Dependency Dashboard 等の
+            // アラート以外の Issue を統計から除外する
+            ("labels", "alert"),
             ("per_page", "100"),
             ("sort", "created"),
             ("direction", "desc"),

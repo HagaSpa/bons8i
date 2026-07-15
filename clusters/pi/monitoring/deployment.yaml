@@ -23,6 +23,8 @@ spec:
                 secretKeyRef:
                   name: alertmanager-to-github
                   key: github-token
+            - name: ATG_LABELS
+              value: alert
           ports:
             - name: http
               containerPort: 8080
