@@ -13,9 +13,10 @@
       "enabled": false
     },
     {
-      "description": "group app-level minor/patch updates into a single PR",
+      "description": "group app-level minor/patch updates into a single PR (0.x can break on minor, so keep it out)",
       "matchManagers": ["npm", "cargo", "github-actions", "dockerfile"],
       "matchUpdateTypes": ["minor", "patch"],
+      "matchCurrentVersion": ">=1.0.0",
       "groupName": "app minor/patch dependencies"
     }
   ]
