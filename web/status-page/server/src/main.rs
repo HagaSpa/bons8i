@@ -49,6 +49,16 @@ async fn main() {
 
     let state = Arc::new(AppState {
         client: reqwest::Client::builder()
+            // reqwest 0.13 の既定は OS の証明書ストアを読む platform-verifier だが、
+            // scratch イメージにはストアが無いため、同梱した Mozilla ルートだけで検証する
+            .tls_certs_only(
+                webpki_root_certs::TLS_SERVER_ROOT_CERTS
+                    .iter()
+                    .map(|der| {
+                        reqwest::Certificate::from_der(der).expect("bundled webpki root")
+                    })
+                    .collect::<Vec<_>>(),
+            )
             .timeout(Duration::from_secs(10))
             .build()
             .expect("reqwest client"),
