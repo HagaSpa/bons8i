@@ -1,0 +1,41 @@
+name: external-probe
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  issues: write
+concurrency:
+  group: external-probe
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - id: probe
+        run: |
+          ok=false
+          for i in 1 2 3; do
+            if curl -fsS --max-time 10 -o /dev/null https://bons8i.hagaspa.com/; then
+              ok=true
+              break
+            fi
+            sleep 30
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          open_issue=$(gh issue list --label outage --state open --json number --jq '.[0].number // empty')
+          if [ "${{ steps.probe.outputs.ok }}" = "false" ]; then
+            if [ -z "$open_issue" ]; then
+              gh issue create \
+                --title "[OUTAGE] bons8i.hagaspa.com is unreachable" \
+                --label alert,outage \
+                --body "External probe failed 3 consecutive attempts (10s timeout, 30s interval)."
+            fi
+          else
+            if [ -n "$open_issue" ]; then
+              gh issue close "$open_issue" --comment "External probe succeeded. Service recovered."
+            fi
+          fi
