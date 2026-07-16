@@ -3,5 +3,6 @@ kind: Kustomization
 resources:
   - externalsecret-grafana-admin.yaml
   - externalsecret-atg.yaml
+  - vmrule-eso.yaml
   - deployment.yaml
   - service.yaml

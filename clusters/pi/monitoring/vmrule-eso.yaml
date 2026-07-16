@@ -1,0 +1,17 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: external-secrets
+  namespace: monitoring
+spec:
+  groups:
+    - name: external-secrets
+      rules:
+        - alert: ExternalSecretSyncFailing
+          expr: externalsecret_status_condition{condition="Ready",status="False"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'ExternalSecret {{ $labels.namespace }}/{{ $labels.name }} has not been Ready for 15 minutes'
+            description: 'ESO cannot sync the secret from AWS SSM. Check `kubectl -n {{ $labels.namespace }} describe externalsecret {{ $labels.name }}` for the provider error (credentials, IAM policy, or parameter name).'
