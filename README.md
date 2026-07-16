@@ -11,7 +11,8 @@ status page served at [bons8i.hagaspa.com](https://bons8i.hagaspa.com).
 .
 ├── clusters/pi/   # Cluster manifests + Argo CD Applications (App of Apps)
 ├── web/           # Application source (status page: Rust BFF + React)
-└── docs/          # Postmortems
+├── scripts/       # Operational tooling (DR drill)
+└── docs/          # Postmortems & runbooks
 ```
 
 See [`clusters/pi/README.md`](clusters/pi/README.md) for the component list and
@@ -29,8 +30,12 @@ architecture diagram.
 - **Monitoring** — VictoriaMetrics k8s stack (vmsingle / vmagent / vmalert /
   Alertmanager / Grafana). Alerts are routed to GitHub Issues via
   alertmanager-to-github, so an open issue means an ongoing incident.
-- **Secrets** — sealed-secrets. Encrypted `SealedSecret` resources are safe to
-  commit; the in-cluster controller decrypts them.
+- **Secrets** — External Secrets Operator + AWS SSM Parameter Store. No secret
+  material (not even ciphertext) lives in git: `ExternalSecret` resources only
+  reference parameters, and a read-only scoped IAM key is the single
+  out-of-band credential. Disaster recovery is rehearsed with
+  [`scripts/dr-drill.sh`](scripts/dr-drill.sh) against a throwaway kind
+  cluster; see the [DR runbook](docs/dr-runbook.md) (Japanese).
 - **Edge** — Cloudflare Tunnel (outbound-only connector, no open inbound
   ports) + Cloudflare Access for authentication in front of private apps.
 - **Storage** — local-path-provisioner, consumed via the upstream kustomization
