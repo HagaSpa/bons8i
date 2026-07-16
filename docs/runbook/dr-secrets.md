@@ -32,24 +32,26 @@ root SYNC → 子 App `external-secrets` を SYNC し、3 Deployment（controlle
 
 ### 2. アクセスキーを再発行
 
+外部パーサーを使わず、aws CLI 組み込みの `--query`（JMESPath）で 2 つの値を直接シェル変数に受ける。
+
 ```bash
-KEY_JSON=$(aws iam create-access-key --user-name bons8i-eso --output json)
-echo "KEY_JSON length: ${#KEY_JSON}"
+read -r AWS_AK AWS_SK < <(aws iam create-access-key --user-name bons8i-eso \
+  --query 'AccessKey.[AccessKeyId,SecretAccessKey]' --output text)
+echo "id 長: ${#AWS_AK}（期待 20）/ secret 長: ${#AWS_SK}（期待 40）"
 ```
 
-- **長さが 0 なら停止**（空のまま先に進むと空の Secret が黙って作られる）
+- **長さが期待値と違えば停止**（空・破損のまま先に進むと不正な Secret が黙って作られる）
 - `LimitExceeded` が出たら既存キーが 2 本ある。使われていない方を削除してから再実行（手順 5 参照）
 
 ### 3. クレデンシャル Secret を投入
 
-値を手で貼らず、コマンド置換で直結する（手貼りは不可視の 1 文字混入で
-`UnrecognizedClientException` を招く）。
+値を手で貼らない（手貼りは不可視の 1 文字混入で `UnrecognizedClientException` を招く）。
 
 ```bash
 kubectl -n external-secrets create secret generic aws-ssm-credentials \
-  --from-literal=access-key-id="$(printf '%s' "$KEY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessKey"]["AccessKeyId"])')" \
-  --from-literal=secret-access-key="$(printf '%s' "$KEY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessKey"]["SecretAccessKey"])')"
-unset KEY_JSON
+  --from-literal=access-key-id="$AWS_AK" \
+  --from-literal=secret-access-key="$AWS_SK"
+unset AWS_AK AWS_SK
 ```
 
 ### 4. 残りの App を SYNC して検証

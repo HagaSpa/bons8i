@@ -35,7 +35,7 @@ architecture diagram.
   reference parameters, and a read-only scoped IAM key is the single
   out-of-band credential. Disaster recovery is rehearsed with
   [`scripts/dr-drill.sh`](scripts/dr-drill.sh) against a throwaway kind
-  cluster; see the [DR runbook](docs/dr-runbook.md) (Japanese).
+  cluster; see the [DR runbook](docs/runbook/dr-secrets.md) (Japanese).
 - **Edge** — Cloudflare Tunnel (outbound-only connector, no open inbound
   ports) + Cloudflare Access for authentication in front of private apps.
 - **Storage** — local-path-provisioner, consumed via the upstream kustomization

@@ -12,7 +12,7 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
 cd "$(git rev-parse --show-toplevel)"
 
-for cmd in aws kind kubectl helm docker python3 git; do
+for cmd in aws kind kubectl helm docker jq git; do
   command -v "$cmd" >/dev/null || die "$cmd が見つかりません"
 done
 docker info >/dev/null 2>&1 || die "docker daemon が起動していません"
@@ -24,7 +24,7 @@ fi
 
 KEY_COUNT=$(aws iam list-access-keys --user-name "$IAM_USER" --query 'length(AccessKeyMetadata)' --output text)
 if [ "$KEY_COUNT" -ge 2 ]; then
-  die "IAM ユーザー $IAM_USER のアクセスキーが上限（2 本）に達しています。docs/dr-runbook.md の手順 5 で未使用キーを削除してから再実行してください"
+  die "IAM ユーザー $IAM_USER のアクセスキーが上限（2 本）に達しています。docs/runbook/dr-secrets.md の手順 5 で未使用キーを削除してから再実行してください"
 fi
 
 ESO_VERSION=$(awk '/targetRevision:/ {print $2; exit}' clusters/pi/argocd/apps/external-secrets.yaml)
@@ -55,16 +55,16 @@ helm install external-secrets external-secrets/external-secrets --version "$ESO_
   -n external-secrets --create-namespace --kube-context "$DRILL_CONTEXT" --wait --timeout 5m >/dev/null
 
 log "3/6 演習用アクセスキーを発行して投入"
-KEY_JSON=$(aws iam create-access-key --user-name "$IAM_USER" --output json)
-if [ "${#KEY_JSON}" -lt 100 ]; then
-  die "create-access-key の出力が不正です（length=${#KEY_JSON}）"
+read -r DRILL_KEY_ID DRILL_KEY_SECRET < <(aws iam create-access-key --user-name "$IAM_USER" \
+  --query 'AccessKey.[AccessKeyId,SecretAccessKey]' --output text)
+if [ "${#DRILL_KEY_ID}" -ne 20 ] || [ "${#DRILL_KEY_SECRET}" -ne 40 ]; then
+  die "create-access-key の出力が不正です（id 長=${#DRILL_KEY_ID} / secret 長=${#DRILL_KEY_SECRET}）"
 fi
-DRILL_KEY_ID=$(printf '%s' "$KEY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessKey"]["AccessKeyId"])')
 kubectl --context "$DRILL_CONTEXT" -n external-secrets create secret generic aws-ssm-credentials \
   --from-literal=access-key-id="$DRILL_KEY_ID" \
-  --from-literal=secret-access-key="$(printf '%s' "$KEY_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["AccessKey"]["SecretAccessKey"])')" \
+  --from-literal=secret-access-key="$DRILL_KEY_SECRET" \
   >/dev/null
-unset KEY_JSON
+unset DRILL_KEY_SECRET
 echo "投入完了（キーは演習終了時に自動削除されます）"
 
 log "4/6 git の宣言を apply"
@@ -84,7 +84,7 @@ kubectl --context "$DRILL_CONTEXT" get externalsecrets -A
 log "6/6 本番 ($PROD_CONTEXT) とのハッシュ照合"
 secret_hash() {
   kubectl --context "$1" -n "$2" get secret "$3" -o json \
-    | python3 -c 'import json,sys,hashlib; print(hashlib.sha256(json.dumps(json.load(sys.stdin)["data"], sort_keys=True).encode()).hexdigest())'
+    | jq -Sc '.data' | shasum -a 256 | awk '{print $1}'
 }
 FAIL=0
 for f in $ES_FILES; do
