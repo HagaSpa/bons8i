@@ -7,15 +7,13 @@
 
 ```
 AWS SSM Parameter Store（SecureString、/bons8i/* 階層、ap-northeast-1）
-      ↓ 読み取り: IAM ユーザー bons8i-eso（GetParameter / GetParametersByPath を /bons8i/* に限定）
+      ↓ 読み取り: IAM ユーザー bons8i-eso
 ESO（ClusterSecretStore aws-ssm + ExternalSecret 群 = すべて git 管理）
       ↓ 生成・同期
 K8s Secret（ワークロードが参照）
 ```
 
-- **git に無い秘密は `aws-ssm-credentials`（K8s Secret）ただ 1 つ**。中身は `bons8i-eso` のアクセスキー
-- **アクセスキーは保管しない。失われたら IAM で再発行する**。SecretAccessKey は AWS 自身も平文で保持しておらず（発行時に 1 回だけ表示）、キーそのものに保全価値はない
-- 復旧の前提は「AWS アカウントに IAM 管理権限でアクセスできること」のみ。root の MFA が最重要防壁
+前提: AWS アカウントに IAM 管理権限でアクセスできること（アクセスキーは保管していない — 手順 2 で再発行する）。
 
 ## 復旧手順
 
@@ -26,13 +24,13 @@ K8s Secret（ワークロードが参照）
 ```bash
 kubectl apply -k clusters/pi/argocd/bootstrap
 kubectl apply -f clusters/pi/argocd/root-app.yaml
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+kubectl -n argocd port-forward svc/argocd-server 8080:443
 ```
 
-root SYNC → 子 App `external-secrets` を SYNC し、3 Deployment（controller / webhook / cert-controller）の Running を確認する。
+`https://localhost:8080` に admin でログインし、root App を SYNC → 子 App `external-secrets` を SYNC。3 Deployment（controller / webhook / cert-controller）の Running を確認する。
 
 ### 2. アクセスキーを再発行
-
-外部パーサーを使わず、aws CLI 組み込みの `--query`（JMESPath）で 2 つの値を直接シェル変数に受ける。
 
 ```bash
 read -r AWS_AK AWS_SK < <(aws iam create-access-key --user-name bons8i-eso \
@@ -45,8 +43,6 @@ echo "id 長: ${#AWS_AK}（期待 20）/ secret 長: ${#AWS_SK}（期待 40）"
 
 ### 3. クレデンシャル Secret を投入
 
-値を手で貼らない（手貼りは不可視の 1 文字混入で `UnrecognizedClientException` を招く）。
-
 ```bash
 kubectl -n external-secrets create secret generic aws-ssm-credentials \
   --from-literal=access-key-id="$AWS_AK" \
@@ -56,7 +52,7 @@ unset AWS_AK AWS_SK
 
 ### 4. 残りの App を SYNC して検証
 
-root App から全 App を SYNC する。ExternalSecret 群が SSM から Secret を再生成する。
+手順 1 と同じ ArgoCD UI で残りの App を SYNC する。ExternalSecret 群が SSM から Secret を再生成する。
 
 ```bash
 kubectl get externalsecrets -A
@@ -64,8 +60,7 @@ kubectl get externalsecrets -A
 
 全行が `SecretSynced / True` になれば復旧完了。
 
-- 発行直後のキーは IAM の伝播遅延で数十秒 `UnrecognizedClientException` になることがある。ESO が自動リトライするので**数分は待ってから**判断する
-- `AccessDenied` の場合は伝播遅延ではなく IAM ポリシーの問題
+- 発行直後のキーは IAM の伝播遅延で **数分待つ**
 
 ### 5. 使われていないキーの掃除
 
