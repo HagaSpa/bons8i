@@ -13,7 +13,7 @@ spec:
       releaseName: vmks
       values: |
         # victoria-metrics-k8s-stack v0.86.0 slim values (single-node Pi 5 8GB, swap 0B)
-        # 方針: retention 7d / PVC 10Gi / memory は requests=limits で青天井回避 / CPU は requests のみ
+        # 方針: retention 13 ヶ月 / PVC 10Gi / memory は requests=limits で青天井回避 / CPU は requests のみ
 
         victoria-metrics-operator:
           resources:
@@ -25,8 +25,8 @@ spec:
 
         vmsingle:
           spec:
-            # 単位なしの数字は「月」扱いになるため、接尾辞 d を必ず付ける
-            retentionPeriod: "7d"
+            # 単位なしの数字は「月」扱い（13 = 13 ヶ月。前年同月が比較窓から落ちない）
+            retentionPeriod: "13"
             storage:
               accessModes:
                 - ReadWriteOnce
