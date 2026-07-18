@@ -1,0 +1,68 @@
+# 永続アーカイブ: 閉じた月のメトリクスを論理エクスポートで S3 に追記する。
+# vmbackup の鏡（victoria-metrics/ プレフィックス）とは独立した追記層で、
+# retention を超えた過去も永続に残る。月同士は重複しないため世代の重複なし。
+# ⚠️ 置き場は必ず vmbackup の dst の外にすること（鏡は dst 配下の
+#    見知らぬオブジェクトを削除するため、同居させるとアーカイブが消える）。
+# 実行は毎月 2 日（月初直後の書き込み遅延の取りこぼし回避）。
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vm-archive
+  namespace: monitoring
+spec:
+  schedule: "30 3 2 * *"
+  timeZone: Asia/Tokyo
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: vm-archive
+              image: amazon/aws-cli:2.36.2
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  VM=http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc:8428
+                  # ARCHIVE_MONTH (YYYY-MM) を指定すればその月を再作成できる（手動ドリル・作り直し用）
+                  MONTH="${ARCHIVE_MONTH:-$(date -u -d "$(date -u +%Y-%m-01) -1 month" +%Y-%m)}"
+                  START="${MONTH}-01T00:00:00Z"
+                  END=$(date -u -d "${START} +1 month" +%Y-%m-01T00:00:00Z)
+                  DST="s3://bons8i-backup/vm-archive/${MONTH}.native.gz"
+                  echo "archiving ${MONTH} (${START} .. ${END}) -> ${DST}"
+                  curl -sfS -H 'Accept-Encoding: gzip' \
+                    --data-urlencode 'match[]={__name__!=""}' \
+                    --data-urlencode "start=${START}" \
+                    --data-urlencode "end=${END}" \
+                    "${VM}/api/v1/export/native" \
+                  | aws s3 cp - "${DST}" --expected-size 2147483648
+                  SIZE=$(aws s3api head-object --bucket bons8i-backup --key "vm-archive/${MONTH}.native.gz" --query ContentLength --output text)
+                  echo "uploaded bytes: ${SIZE}"
+                  # 空アーカイブは「成功に見える失敗」なのでエラーにする
+                  [ "${SIZE}" -gt 1024 ] || { echo "archive too small"; exit 1; }
+              env:
+                - name: AWS_DEFAULT_REGION
+                  value: ap-northeast-1
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: vmbackup-aws-credentials
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: vmbackup-aws-credentials
+                      key: secret-access-key
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
