@@ -32,7 +32,9 @@ spec:
                 - ReadWriteOnce
               resources:
                 requests:
-                  storage: 10Gi
+                  # 13mo retention × 44 MB/日 ≒ 17.4 GB + 成長余裕。
+                  # local-path は in-place 拡張非対応のため、サイズ変更は PVC 再作成 + データ移行が必要
+                  storage: 30Gi
             resources:
               requests:
                 cpu: 200m
