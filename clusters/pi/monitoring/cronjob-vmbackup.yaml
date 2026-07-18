@@ -1,0 +1,58 @@
+# DR 用の鏡: vmsingle の TSDB を日次で S3 に増分同期する（OSS vmbackup。
+# operator の spec.vmBackup = vmbackupmanager は Enterprise のため CronJob で代替）。
+# S3 側は「現在の TSDB の複製」であり、retention を超えた世代保存はしない
+# （それは vm-archive の役割）。lifecycle も設定しない。
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: vmbackup
+  namespace: monitoring
+spec:
+  schedule: "0 3 * * *"
+  timeZone: Asia/Tokyo
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 3600
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: vmbackup
+              # vmsingle と同版を維持する（バージョン更新時はセットで上げる）
+              image: victoriametrics/vmbackup:v1.147.0
+              args:
+                - -storageDataPath=/victoria-metrics-data
+                - -snapshot.createURL=http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc:8428/snapshot/create
+                - -dst=s3://bons8i-backup/victoria-metrics/
+              env:
+                - name: AWS_REGION
+                  value: ap-northeast-1
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: vmbackup-aws-credentials
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: vmbackup-aws-credentials
+                      key: secret-access-key
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+              volumeMounts:
+                - name: vmdata
+                  mountPath: /victoria-metrics-data
+                  readOnly: true
+          volumes:
+            - name: vmdata
+              persistentVolumeClaim:
+                claimName: vmsingle-vmks-victoria-metrics-k8s-stack
+                readOnly: true

@@ -3,6 +3,10 @@ kind: Kustomization
 resources:
   - externalsecret-grafana-admin.yaml
   - externalsecret-atg.yaml
+  - externalsecret-vmbackup.yaml
   - vmrule-eso.yaml
+  - vmrule-backup.yaml
+  - cronjob-vmbackup.yaml
+  - cronjob-vm-archive.yaml
   - deployment.yaml
   - service.yaml

@@ -1,0 +1,33 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: metrics-backup
+  namespace: monitoring
+spec:
+  groups:
+    - name: metrics-backup
+      rules:
+        - alert: BackupJobFailed
+          expr: kube_job_status_failed{namespace="monitoring", job_name=~"(vmbackup|vm-archive)-.*"} > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Backup job {{ $labels.job_name }} failed'
+            description: 'A metrics backup job failed. Check `kubectl -n monitoring logs job/{{ $labels.job_name }}` for the error (S3 credentials, network, or vmsingle snapshot API).'
+        # 沈黙検知: CronJob がそもそも走らなくなる事故（suspend・スケジューラ異常等）を拾う。
+        # 日次の vmbackup は 26h、月次の vm-archive は 32d を超えたら異常
+        - alert: VmbackupSilent
+          expr: time() - max(kube_cronjob_status_last_successful_time{namespace="monitoring", cronjob="vmbackup"}) > 93600
+          labels:
+            severity: warning
+          annotations:
+            summary: 'vmbackup has not succeeded for more than 26 hours'
+            description: 'The daily TSDB mirror to S3 is stale. Check `kubectl -n monitoring get cronjob vmbackup` and recent jobs.'
+        - alert: VmArchiveSilent
+          expr: time() - max(kube_cronjob_status_last_successful_time{namespace="monitoring", cronjob="vm-archive"}) > 2764800
+          labels:
+            severity: warning
+          annotations:
+            summary: 'vm-archive has not succeeded for more than 32 days'
+            description: 'The monthly metrics archive to S3 is stale. Check `kubectl -n monitoring get cronjob vm-archive` and recent jobs.'

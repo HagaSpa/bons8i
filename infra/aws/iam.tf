@@ -87,3 +87,38 @@ resource "aws_iam_role_policy" "chatbot" {
     }]
   })
 }
+
+# IAM user for in-cluster backup jobs (vmbackup mirror + monthly metrics archive).
+# Access keys are issued manually and stored in SSM (never in terraform state).
+resource "aws_iam_user" "vmbackup" {
+  name = "bons8i-vmbackup"
+}
+
+resource "aws_iam_user_policy" "vmbackup" {
+  name = "bons8i-vmbackup"
+  user = aws_iam_user.vmbackup.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::${local.backup_bucket}"
+        Condition = {
+          StringLike = {
+            "s3:prefix" = ["victoria-metrics/*", "vm-archive/*"]
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+        Resource = [
+          "arn:aws:s3:::${local.backup_bucket}/victoria-metrics/*",
+          "arn:aws:s3:::${local.backup_bucket}/vm-archive/*",
+        ]
+      }
+    ]
+  })
+}
