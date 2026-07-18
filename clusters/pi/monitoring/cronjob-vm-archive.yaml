@@ -26,10 +26,12 @@ spec:
             - name: vm-archive
               image: amazon/aws-cli:2.36.2
               command:
-                - sh
+                - bash
                 - -c
                 - |
-                  set -eu
+                  # pipefail 必須: curl（パイプ先頭）の失敗を握りつぶすと
+                  # 途中で切れた断片が「成功」としてアップロードされる（初回ドリルで実証）
+                  set -euo pipefail
                   VM=http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc:8428
                   # ARCHIVE_MONTH (YYYY-MM) を指定すればその月を再作成できる（手動ドリル・作り直し用）
                   MONTH="${ARCHIVE_MONTH:-$(date -u -d "$(date -u +%Y-%m-01) -1 month" +%Y-%m)}"

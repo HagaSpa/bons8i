@@ -40,7 +40,9 @@ spec:
                 cpu: 200m
                 memory: 512Mi
               limits:
-                memory: 512Mi
+                # 512Mi では月次アーカイブの全量エクスポートで OOMKilled になった（実測）。
+                # 13mo 幅の長期クエリにも備えて 1Gi
+                memory: 1Gi
 
         vmagent:
           spec:
