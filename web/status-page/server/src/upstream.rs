@@ -1,7 +1,7 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 
-use crate::types::{FiringAlert, IssueStats, MetricCards};
+use crate::types::{FiringAlert, IssueStats, MetricCards, OutageWindow};
 
 // クエリはコードに固定。ユーザー入力は上流に一切届かない
 const Q_NODE_TEMP: &str = "max(node_hwmon_temp_celsius)";
@@ -109,20 +109,30 @@ pub async fn fetch_alerts(
         .collect())
 }
 
-#[derive(Deserialize)]
-struct GhIssue {
+#[derive(Clone, Deserialize)]
+pub struct GhIssue {
+    number: u32,
     state: String,
     created_at: DateTime<Utc>,
     closed_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    labels: Vec<GhLabel>,
     // PR も issues エンドポイントに混ざって返る。このキーの有無で除外する
     pull_request: Option<serde_json::Value>,
 }
 
+#[derive(Clone, Deserialize)]
+struct GhLabel {
+    name: String,
+}
+
+/// alert ラベル付き Issue の一覧。Issue 統計と uptime calendar の両方が
+/// この 1 レスポンスから導出される（キャッシュも共有 = GitHub へのリクエストは増えない）。
 /// 無認証（public データのみ）。60 req/h per IP の制限は呼び出し元のキャッシュで吸収する。
-pub async fn fetch_issue_stats(
+pub async fn fetch_issues(
     client: &reqwest::Client,
     repo: &str,
-) -> Result<IssueStats, reqwest::Error> {
+) -> Result<Vec<GhIssue>, reqwest::Error> {
     let url = format!("https://api.github.com/repos/{repo}/issues");
     let issues: Vec<GhIssue> = client
         .get(&url)
@@ -142,13 +152,14 @@ pub async fn fetch_issue_stats(
         .error_for_status()?
         .json()
         .await?;
-
-    let cutoff = Utc::now() - Duration::days(30);
-    let issues: Vec<_> = issues
+    Ok(issues
         .into_iter()
         .filter(|i| i.pull_request.is_none())
-        .collect();
+        .collect())
+}
 
+pub fn issue_stats(issues: &[GhIssue]) -> IssueStats {
+    let cutoff = Utc::now() - Duration::days(30);
     let open_count = issues.iter().filter(|i| i.state == "open").count() as u32;
     let closed_30d: Vec<_> = issues
         .iter()
@@ -162,9 +173,79 @@ pub async fn fetch_issue_stats(
         total_hours / closed_30d.len() as f64
     });
 
-    Ok(IssueStats {
+    IssueStats {
         open_count,
         closed_count_30d: closed_30d.len() as u32,
         avg_hours_to_close_30d: avg_hours,
-    })
+    }
+}
+
+/// outage ラベル付き Issue だけが「訪問者視点の停止」の記録（ラベル 2 層化）。
+/// 運用アラート（alert のみ）はサービスとしては生きているので窓にしない。
+pub fn outage_windows(issues: &[GhIssue]) -> Vec<OutageWindow> {
+    issues
+        .iter()
+        .filter(|i| i.labels.iter().any(|l| l.name == "outage"))
+        .map(|i| OutageWindow {
+            started_at: i.created_at.to_rfc3339(),
+            ended_at: i.closed_at.map(|c| c.to_rfc3339()),
+            issue_number: i.number,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn issue(
+        number: u32,
+        labels: &[&str],
+        created_at: &str,
+        closed_at: Option<&str>,
+    ) -> GhIssue {
+        GhIssue {
+            number,
+            state: if closed_at.is_some() { "closed" } else { "open" }.into(),
+            created_at: created_at.parse().unwrap(),
+            closed_at: closed_at.map(|c| c.parse().unwrap()),
+            labels: labels.iter().map(|n| GhLabel { name: (*n).into() }).collect(),
+            pull_request: None,
+        }
+    }
+
+    #[test]
+    fn outage_windows_filters_by_label() {
+        let issues = vec![
+            issue(69, &["alert", "outage"], "2026-07-16T10:34:47Z", Some("2026-07-16T10:39:24Z")),
+            issue(65, &["alert"], "2026-07-16T11:05:00Z", Some("2026-07-16T11:15:00Z")),
+            issue(90, &["alert", "outage"], "2026-07-18T00:00:00Z", None),
+        ];
+        let windows = outage_windows(&issues);
+        assert_eq!(windows.len(), 2);
+        assert_eq!(windows[0].issue_number, 69);
+        assert_eq!(windows[0].started_at, "2026-07-16T10:34:47+00:00");
+        assert_eq!(windows[0].ended_at.as_deref(), Some("2026-07-16T10:39:24+00:00"));
+        // open 中の Issue は ended_at が無い = 障害継続中
+        assert_eq!(windows[1].issue_number, 90);
+        assert_eq!(windows[1].ended_at, None);
+    }
+
+    #[test]
+    fn issue_stats_counts_open_and_recent_closes() {
+        let now = Utc::now();
+        let recent = (now - Duration::hours(2)).to_rfc3339();
+        let recent_close = (now - Duration::hours(1)).to_rfc3339();
+        let old = (now - Duration::days(90)).to_rfc3339();
+        let old_close = (now - Duration::days(89)).to_rfc3339();
+        let issues = vec![
+            issue(1, &["alert"], &recent, None),
+            issue(2, &["alert"], &recent, Some(&recent_close)),
+            issue(3, &["alert"], &old, Some(&old_close)), // 30 日窓の外
+        ];
+        let stats = issue_stats(&issues);
+        assert_eq!(stats.open_count, 1);
+        assert_eq!(stats.closed_count_30d, 1);
+        assert!((stats.avg_hours_to_close_30d.unwrap() - 1.0).abs() < 0.1);
+    }
 }

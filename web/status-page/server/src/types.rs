@@ -46,6 +46,27 @@ pub struct MetricCards {
 #[derive(Clone, Serialize, TS)]
 #[ts(export, export_to = "../../frontend/src/generated/")]
 #[serde(rename_all = "camelCase")]
+pub struct UptimeResponse {
+    pub windows: Vec<OutageWindow>,
+    /// 外形監視の記録開始時刻（ISO 8601）。これより前の日は「観測なし」として描く
+    pub since: String,
+    pub generated_at: String,
+}
+
+/// outage ラベル付き Issue 1 件 = 訪問者視点の downtime 窓 1 つ
+#[derive(Clone, Serialize, TS)]
+#[ts(export, export_to = "../../frontend/src/generated/")]
+#[serde(rename_all = "camelCase")]
+pub struct OutageWindow {
+    pub started_at: String,
+    /// None = 障害継続中
+    pub ended_at: Option<String>,
+    pub issue_number: u32,
+}
+
+#[derive(Clone, Serialize, TS)]
+#[ts(export, export_to = "../../frontend/src/generated/")]
+#[serde(rename_all = "camelCase")]
 pub struct IssueStats {
     // u32 なのは ts-rs の写像のため（u64 は bigint になるが JSON.parse は number を返す）
     pub open_count: u32,

@@ -14,7 +14,7 @@ use axum::Router;
 use rust_embed::RustEmbed;
 
 use cache::Cache;
-use types::{FiringAlert, MetricCards, Overall, StatusResponse};
+use types::{FiringAlert, MetricCards, Overall, StatusResponse, UptimeResponse};
 
 // コンパイルには frontend/dist/ の実在が必要（先に `npm run build` を実行しておく）
 #[derive(RustEmbed)]
@@ -24,6 +24,11 @@ struct Assets;
 const CLUSTER_TTL: Duration = Duration::from_secs(60);
 // GitHub は無認証 60 req/h 制限があるので長めに
 const GITHUB_TTL: Duration = Duration::from_secs(300);
+// 外形監視（Lambda probe）が outage Issue の記録を始めた時刻。これより前は「観測なし」
+const PROBE_SINCE: &str = "2026-07-16T00:00:00Z";
+// SPA のクライアントルート。ここに載せたパスだけ index.html を返す
+// （ワイルドカード fallback にはせず、未知パスへの 404 を保つ）
+const SPA_ROUTES: &[&str] = &["uptime"];
 
 struct AppState {
     client: reqwest::Client,
@@ -31,7 +36,9 @@ struct AppState {
     am_url: String,
     github_repo: String,
     cluster_cache: Cache<(Option<Vec<FiringAlert>>, MetricCards)>,
-    issue_cache: Cache<types::IssueStats>,
+    // 生の Issue リストを持ち、統計（/api/status）と outage 窓（/api/uptime）を
+    // 同じレスポンスから導出する = GitHub へのリクエストは 1 本のまま
+    issue_cache: Cache<Vec<upstream::GhIssue>>,
 }
 
 fn env_or(key: &str, default: &str) -> String {
@@ -73,6 +80,7 @@ async fn main() {
     let app = Router::new()
         .route("/healthz", get(|| async { "ok" }))
         .route("/api/status", get(api_status))
+        .route("/api/uptime", get(api_uptime))
         .fallback(static_handler)
         .with_state(state.clone());
 
@@ -91,7 +99,11 @@ async fn main() {
 /// immutable、index.html は no-cache（デプロイ即反映）。
 async fn static_handler(uri: Uri) -> Response {
     let path = uri.path().trim_start_matches('/');
-    let path = if path.is_empty() { "index.html" } else { path };
+    let path = if path.is_empty() || SPA_ROUTES.contains(&path) {
+        "index.html"
+    } else {
+        path
+    };
     match Assets::get(path) {
         Some(file) => {
             let mime = mime_guess::from_path(path).first_or_octet_stream();
@@ -129,15 +141,7 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         })
         .await;
 
-    let issues = state
-        .issue_cache
-        .get_or_refresh(|| async {
-            upstream::fetch_issue_stats(&state.client, &state.github_repo)
-                .await
-                .map_err(|e| tracing::warn!(error = %e, "github fetch failed"))
-                .ok()
-        })
-        .await;
+    let issues = cached_issues(&state).await.map(|list| upstream::issue_stats(&list));
 
     let (alerts, metrics) = cluster.unwrap_or((None, MetricCards::default()));
     let (overall, firing_alerts) = match alerts {
@@ -153,4 +157,28 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         issues,
         generated_at: chrono::Utc::now().to_rfc3339(),
     })
+}
+
+async fn api_uptime(State(state): State<Arc<AppState>>) -> Json<UptimeResponse> {
+    let windows = cached_issues(&state)
+        .await
+        .map(|list| upstream::outage_windows(&list))
+        .unwrap_or_default();
+    Json(UptimeResponse {
+        windows,
+        since: PROBE_SINCE.into(),
+        generated_at: chrono::Utc::now().to_rfc3339(),
+    })
+}
+
+async fn cached_issues(state: &AppState) -> Option<Vec<upstream::GhIssue>> {
+    state
+        .issue_cache
+        .get_or_refresh(|| async {
+            upstream::fetch_issues(&state.client, &state.github_repo)
+                .await
+                .map_err(|e| tracing::warn!(error = %e, "github fetch failed"))
+                .ok()
+        })
+        .await
 }
