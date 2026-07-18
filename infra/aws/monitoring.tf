@@ -27,4 +27,8 @@ resource "aws_chatbot_slack_channel_configuration" "probe" {
   slack_team_id      = "T0BHP71R75W"
   slack_channel_id   = "C0BHP72451N"
   sns_topic_arns     = [aws_sns_topic.probe_errors.arn]
+
+  # 配信失敗は Slack にも CloudWatch にも痕跡が残らない（サイレント失敗）ため、
+  # エラーログを us-east-1 の /aws/chatbot/bons8i-external-probe に残す
+  logging_level = "ERROR"
 }
