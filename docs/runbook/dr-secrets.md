@@ -15,6 +15,8 @@ K8s Secret（ワークロードが参照）
 
 前提: AWS アカウントに IAM 管理権限でアクセスできること（アクセスキーは保管していない — 手順 2 で再発行する）。
 
+> **注意（PAT の共用）**: SSM の GitHub PAT（`/bons8i/monitoring/alertmanager-to-github/github-token`）は、ESO 経由のクラスタ内 alertmanager-to-github に加えて**外形監視 Lambda（external probe、`infra/aws/`）も直接読んで共用している**。この PAT を失効させると両方が同時に止まる。ローテーションは SSM の値を更新すればよく、Lambda は毎回の実行時に SSM から読み直すため再デプロイ不要（クラスタ側は ExternalSecret の再同期を確認する）。
+
 ## 復旧手順
 
 新クラスタの kubectl context で作業する。
