@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { StatusResponse } from "./generated/StatusResponse";
 import type { FiringAlert } from "./generated/FiringAlert";
+import UptimePage from "./UptimePage";
 
 // BFF のクラスタキャッシュ TTL と同周期
 const REFRESH_MS = 60_000;
@@ -35,6 +36,27 @@ function useStatus() {
   }, []);
 
   return { status, unreachable };
+}
+
+// SPA ルーティング（path 方式）。BFF 側の許可リスト（SPA_ROUTES）と対で、
+// 直リンク・リロードはサーバーが index.html を返すことで成立する
+function usePath() {
+  const [path, setPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const onPop = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const navigate = (to: string) => {
+    if (to !== window.location.pathname) {
+      window.history.pushState(null, "", to);
+      setPath(to);
+    }
+  };
+
+  return { path, navigate };
 }
 
 type BadgeKind = StatusResponse["overall"] | "loading" | "unreachable";
@@ -90,31 +112,12 @@ function AlertRow({ alert }: { alert: FiringAlert }) {
   );
 }
 
-export default function App() {
-  const { status, unreachable } = useStatus();
-  const badgeKind: BadgeKind = unreachable
-    ? "unreachable"
-    : (status?.overall ?? "loading");
-  const badge = BADGE[badgeKind];
+function StatusPage({ status }: { status: StatusResponse | null }) {
   const m = status?.metrics;
   const issues = status?.issues ?? null;
 
   return (
-    <main>
-      <header>
-        <h1>🪴 bons8i status</h1>
-        <p className="subtitle">
-          Live status of a single-node Raspberry Pi 5 Kubernetes cluster
-          (kubeadm), reconciled by ArgoCD from{" "}
-          <a href={REPO_URL}>HagaSpa/bons8i</a>.
-        </p>
-      </header>
-
-      <div className={`badge ${badge.className}`}>
-        <span className="badge-dot" />
-        {badge.label}
-      </div>
-
+    <>
       {status && status.firingAlerts.length > 0 && (
         <section>
           <h2>Firing alerts</h2>
@@ -158,6 +161,60 @@ export default function App() {
           />
         </div>
       </section>
+    </>
+  );
+}
+
+const TABS = [
+  { path: "/", label: "Status" },
+  { path: "/uptime", label: "Uptime" },
+];
+
+export default function App() {
+  const { status, unreachable } = useStatus();
+  const { path, navigate } = usePath();
+  const badgeKind: BadgeKind = unreachable
+    ? "unreachable"
+    : (status?.overall ?? "loading");
+  const badge = BADGE[badgeKind];
+
+  return (
+    <main>
+      <header>
+        <h1>🪴 bons8i status</h1>
+        <p className="subtitle">
+          Live status of a single-node Raspberry Pi 5 Kubernetes cluster
+          (kubeadm), reconciled by ArgoCD from{" "}
+          <a href={REPO_URL}>HagaSpa/bons8i</a>.
+        </p>
+      </header>
+
+      <div className={`badge ${badge.className}`}>
+        <span className="badge-dot" />
+        {badge.label}
+      </div>
+
+      <nav className="tabs">
+        {TABS.map((tab) => (
+          <a
+            key={tab.path}
+            href={tab.path}
+            className={path === tab.path ? "active" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate(tab.path);
+            }}
+          >
+            {tab.label}
+          </a>
+        ))}
+      </nav>
+
+      {path === "/uptime" ? (
+        <UptimePage repoUrl={REPO_URL} />
+      ) : (
+        <StatusPage status={status} />
+      )}
 
       <footer>
         {status && <span>Updated {fmt.time(status.generatedAt)} · refreshes every 60 s</span>}
