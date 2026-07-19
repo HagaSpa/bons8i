@@ -27,3 +27,6 @@ secrets/
 *.tfstate
 *.tfstate.*
 .build/
+
+# Node (scripts/render-architecture)
+node_modules/

@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 980" width="1560" height="980" font-family="ui-sans-serif, -apple-system, 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#101828" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D97706"/>
+    </marker>
+    <marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#DC2626"/>
+    </marker>
+    <marker id="arrPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7C3AED"/>
+    </marker>
+    <marker id="arrGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6B7280"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1560" height="980" fill="#F6F7F9"/>
+
+  <!-- header -->
+  <text x="48" y="62" font-size="26" font-weight="700" fill="#111827">bons8i — Backup &amp; alerting</text>
+  <text x="48" y="90" font-size="14" fill="#6B7280">Three-layer metrics backup to S3, and an alert pipeline whose inbox is GitHub Issues</text>
+
+  <!-- legend -->
+  <g font-size="12" fill="#6B7280">
+    <line x1="1090" y1="56" x2="1130" y2="56" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+    <text x="1138" y="60">backup data</text>
+    <line x1="1250" y1="56" x2="1290" y2="56" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrRed)"/>
+    <text x="1298" y="60">alerts</text>
+    <line x1="1090" y1="82" x2="1130" y2="82" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrPurple)"/>
+    <text x="1138" y="86">notification</text>
+    <line x1="1250" y1="82" x2="1290" y2="82" stroke="#6B7280" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrGray)"/>
+    <text x="1298" y="86">manual</text>
+  </g>
+
+  <!-- ===== BACKUP zone ===== -->
+  <rect x="48" y="130" width="680" height="720" rx="16" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5"/>
+  <text x="72" y="162" font-size="12" font-weight="700" fill="#B45309" letter-spacing="2">METRICS &amp; STATE BACKUP — 3 LAYERS + ETCD</text>
+
+  <!-- L0 vmsingle -->
+  <g>
+    <rect x="88" y="184" width="300" height="116" rx="12" fill="#FFFFFF" stroke="#F1E3BE" filter="url(#cardShadow)"/>
+    <rect x="290" y="200" width="80" height="20" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
+    <text x="330" y="214" font-size="10.5" fill="#B45309" text-anchor="middle" font-weight="600">L0 · primary</text>
+    <text x="106" y="216" font-size="15" font-weight="600" fill="#111827">vmsingle (TSDB)</text>
+    <text x="106" y="240" font-size="12" fill="#6B7280">PVC 30Gi on NVMe (local-path)</text>
+    <text x="106" y="260" font-size="12" fill="#6B7280">retention: 13 months</text>
+    <text x="106" y="284" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: monitoring</text>
+  </g>
+
+  <!-- L1 vmbackup -->
+  <g>
+    <rect x="88" y="360" width="300" height="150" rx="12" fill="#FFFFFF" stroke="#F1E3BE" filter="url(#cardShadow)"/>
+    <rect x="300" y="376" width="70" height="20" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
+    <text x="335" y="390" font-size="10.5" fill="#B45309" text-anchor="middle" font-weight="600">L1 · daily</text>
+    <text x="106" y="392" font-size="15" font-weight="600" fill="#111827">CronJob vmbackup</text>
+    <text x="106" y="414" font-size="12" fill="#6B7280">daily 03:00 JST · vmbackup (VM OSS)</text>
+    <text x="106" y="434" font-size="12" fill="#6B7280">incremental mirror of the live TSDB —</text>
+    <text x="106" y="452" font-size="12" fill="#6B7280">a DR restore source, not generations</text>
+    <text x="106" y="482" font-size="11" fill="#B45309" font-family="ui-monospace, 'SF Mono', Menlo, monospace">→ s3://bons8i-backup/victoria-metrics/</text>
+  </g>
+
+  <!-- L2 vm-archive -->
+  <g>
+    <rect x="418" y="360" width="286" height="150" rx="12" fill="#FFFFFF" stroke="#F1E3BE" filter="url(#cardShadow)"/>
+    <rect x="600" y="376" width="86" height="20" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
+    <text x="643" y="390" font-size="10.5" fill="#B45309" text-anchor="middle" font-weight="600">L2 · monthly</text>
+    <text x="436" y="392" font-size="15" font-weight="600" fill="#111827">CronJob vm-archive</text>
+    <text x="436" y="414" font-size="12" fill="#6B7280">2nd of month 03:30 JST</text>
+    <text x="436" y="434" font-size="12" fill="#6B7280">native export of the closed month,</text>
+    <text x="436" y="452" font-size="12" fill="#6B7280">append-only — outlives retention</text>
+    <text x="436" y="482" font-size="11" fill="#B45309" font-family="ui-monospace, 'SF Mono', Menlo, monospace">→ s3://…/vm-archive/YYYY-MM.native.gz</text>
+  </g>
+
+  <!-- etcd -->
+  <g>
+    <rect x="88" y="570" width="300" height="140" rx="12" fill="#FFFFFF" stroke="#F1E3BE" filter="url(#cardShadow)"/>
+    <rect x="302" y="586" width="68" height="20" rx="10" fill="#F3F4F6" stroke="#D1D5DB"/>
+    <text x="336" y="600" font-size="10.5" fill="#374151" text-anchor="middle" font-weight="600">manual</text>
+    <text x="106" y="602" font-size="15" font-weight="600" fill="#111827">etcd snapshot</text>
+    <text x="106" y="624" font-size="11.5" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">scripts/etcd-backup.sh</text>
+    <text x="106" y="648" font-size="12" fill="#6B7280">run from the operator laptop:</text>
+    <text x="106" y="666" font-size="12" fill="#6B7280">etcdctl snapshot → etcdutl verify → scp</text>
+    <text x="106" y="692" font-size="11" fill="#B45309" font-family="ui-monospace, 'SF Mono', Menlo, monospace">→ s3://bons8i-backup/etcd/</text>
+  </g>
+
+  <!-- S3 -->
+  <g>
+    <rect x="418" y="570" width="286" height="140" rx="12" fill="#FFF7ED" stroke="#FDBA74" filter="url(#cardShadow)"/>
+    <text x="436" y="602" font-size="15" font-weight="600" fill="#111827">Amazon S3</text>
+    <text x="436" y="624" font-size="11.5" fill="#B45309" font-family="ui-monospace, 'SF Mono', Menlo, monospace">bons8i-backup · ap-northeast-1</text>
+    <text x="436" y="650" font-size="12" fill="#6B7280">writer: IAM user bons8i-vmbackup,</text>
+    <text x="436" y="668" font-size="12" fill="#6B7280">allowed only on its two prefixes</text>
+    <text x="436" y="692" font-size="12" fill="#6B7280">(key issued manually, kept in SSM)</text>
+  </g>
+
+  <!-- guard note -->
+  <g>
+    <rect x="88" y="744" width="616" height="82" rx="12" fill="#FFFFFF" stroke="#F1E3BE" filter="url(#cardShadow)"/>
+    <text x="106" y="774" font-size="13" font-weight="700" fill="#111827">⏱ The backup is itself monitored</text>
+    <text x="106" y="798" font-size="12" fill="#6B7280">VMRule metrics-backup: BackupJobFailed · VmbackupSilent (&gt;26 h) · VmArchiveSilent (&gt;32 d)</text>
+    <text x="106" y="816" font-size="12" fill="#6B7280">— evaluated by vmalert and delivered through the alert pipeline on the right</text>
+  </g>
+
+  <!-- backup flows -->
+  <path d="M 200 300 L 200 354" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+  <text x="212" y="332" font-size="11" fill="#B45309">snapshot API</text>
+  <path d="M 388 250 C 540 260, 560 300, 562 354" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+  <text x="500" y="290" font-size="11" fill="#B45309">export native</text>
+  <path d="M 238 510 C 238 538, 350 532, 446 562" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+  <path d="M 562 510 L 562 564" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+  <path d="M 388 654 L 412 654" fill="none" stroke="#6B7280" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#arrGray)"/>
+
+  <!-- ===== ALERTING zone ===== -->
+  <rect x="770" y="130" width="750" height="720" rx="16" fill="#FEF2F2" stroke="#FECACA" stroke-width="1.5"/>
+  <text x="794" y="162" font-size="12" font-weight="700" fill="#B91C1C" letter-spacing="2">ALERTING — GITHUB ISSUES AS THE ALERT INBOX</text>
+
+  <!-- vmalert -->
+  <g>
+    <rect x="810" y="184" width="330" height="116" rx="12" fill="#FFFFFF" stroke="#F3D1D1" filter="url(#cardShadow)"/>
+    <text x="828" y="216" font-size="15" font-weight="600" fill="#111827">vmalert</text>
+    <text x="828" y="240" font-size="12" fill="#6B7280">evaluates VMRules against vmsingle:</text>
+    <text x="828" y="258" font-size="12" fill="#6B7280">stack defaultRules · external-secrets sync ·</text>
+    <text x="828" y="276" font-size="12" fill="#6B7280">metrics-backup guards</text>
+  </g>
+
+  <!-- alertmanager -->
+  <g>
+    <rect x="810" y="360" width="330" height="150" rx="12" fill="#FFFFFF" stroke="#F3D1D1" filter="url(#cardShadow)"/>
+    <text x="828" y="392" font-size="15" font-weight="600" fill="#111827">Alertmanager</text>
+    <text x="828" y="416" font-size="12" fill="#6B7280">route: group_by alertname</text>
+    <text x="828" y="440" font-size="12" fill="#6B7280">Watchdog · InfoInhibitor → blackhole</text>
+    <text x="828" y="462" font-size="12" fill="#6B7280">everything else → github receiver</text>
+    <text x="828" y="484" font-size="12" fill="#6B7280">(webhook, send_resolved: true)</text>
+  </g>
+
+  <!-- atg -->
+  <g>
+    <rect x="810" y="570" width="330" height="130" rx="12" fill="#FFFFFF" stroke="#F3D1D1" filter="url(#cardShadow)"/>
+    <text x="828" y="602" font-size="15" font-weight="600" fill="#111827">alertmanager-to-github</text>
+    <text x="828" y="624" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">pfnet-research · v0.3.0</text>
+    <text x="828" y="650" font-size="12" fill="#6B7280">firing alert → GitHub Issue with label</text>
+    <text x="828" y="668" font-size="12" fill="#6B7280">alert; resolves → close; recurs → reopen</text>
+    <text x="828" y="686" font-size="12" fill="#6B7280">(GitHub PAT via ExternalSecret)</text>
+  </g>
+
+  <!-- slack -->
+  <g>
+    <rect x="1190" y="184" width="290" height="116" rx="12" fill="#FFFFFF" stroke="#E9D5FF" filter="url(#cardShadow)"/>
+    <text x="1208" y="216" font-size="15" font-weight="600" fill="#111827">Slack (personal ws)</text>
+    <text x="1208" y="240" font-size="12" fill="#6B7280">GitHub official Slack app:</text>
+    <text x="1208" y="258" font-size="11.5" fill="#7E22CE" font-family="ui-monospace, 'SF Mono', Menlo, monospace">/github subscribe … issues</text>
+    <text x="1208" y="282" font-size="12" fill="#6B7280">zero custom notification code</text>
+  </g>
+
+  <!-- github issues -->
+  <g>
+    <rect x="1190" y="360" width="290" height="150" rx="12" fill="#F9FAFB" stroke="#D1D5DB" filter="url(#cardShadow)"/>
+    <text x="1208" y="392" font-size="15" font-weight="600" fill="#111827">GitHub Issues</text>
+    <text x="1330" y="392" font-size="11" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">HagaSpa/bons8i</text>
+    <text x="1208" y="418" font-size="12" fill="#6B7280">an open issue = an alert firing right now</text>
+    <text x="1208" y="442" font-size="12" fill="#374151" font-weight="600">steady-state goal: 0 open issues</text>
+    <text x="1208" y="468" font-size="12" fill="#6B7280">alert history stays queryable as</text>
+    <text x="1208" y="486" font-size="12" fill="#6B7280">closed issues</text>
+  </g>
+
+  <!-- external probe -->
+  <g>
+    <rect x="1190" y="570" width="290" height="220" rx="12" fill="#FFFFFF" stroke="#F3D1D1" filter="url(#cardShadow)"/>
+    <rect x="1408" y="586" width="54" height="20" rx="10" fill="#FFFBEB" stroke="#FDE68A"/>
+    <text x="1435" y="600" font-size="10.5" fill="#B45309" text-anchor="middle" font-weight="600">AWS</text>
+    <text x="1208" y="602" font-size="15" font-weight="600" fill="#111827">External probe</text>
+    <text x="1208" y="626" font-size="12" fill="#6B7280">EventBridge Scheduler (10 min)</text>
+    <text x="1208" y="644" font-size="12" fill="#6B7280">→ Lambda bons8i-external-probe</text>
+    <text x="1208" y="668" font-size="11.5" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">GET bons8i.hagaspa.com ×3</text>
+    <text x="1208" y="692" font-size="12" fill="#6B7280">fail → Issue (alert + outage)</text>
+    <text x="1208" y="710" font-size="12" fill="#6B7280">recover → close</text>
+    <text x="1208" y="738" font-size="12" fill="#6B7280">Lambda errors: CloudWatch Alarm</text>
+    <text x="1208" y="756" font-size="12" fill="#6B7280">→ SNS → AWS Chatbot → Slack</text>
+  </g>
+
+  <!-- alert flows -->
+  <path d="M 388 226 C 560 226, 640 234, 804 240" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrRed)"/>
+  <text x="560" y="214" font-size="11" fill="#B91C1C">rule evaluation reads vmsingle (fig. 2)</text>
+  <path d="M 975 300 L 975 354" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrRed)"/>
+  <text x="987" y="332" font-size="11" fill="#B91C1C">firing alerts</text>
+  <path d="M 975 510 L 975 564" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrRed)"/>
+  <text x="987" y="542" font-size="11" fill="#B91C1C">webhook</text>
+  <path d="M 1140 620 C 1170 615, 1180 560, 1220 516" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrRed)"/>
+  <path d="M 1335 354 L 1335 306" fill="none" stroke="#7C3AED" stroke-width="2.5" marker-end="url(#arrPurple)"/>
+  <text x="1347" y="334" font-size="11" fill="#6D28D9">issue events</text>
+  <path d="M 1300 564 L 1300 516" fill="none" stroke="#DC2626" stroke-width="2.5" marker-end="url(#arrRed)"/>
+  <text x="1312" y="546" font-size="11" fill="#B91C1C">outage issues</text>
+
+  <!-- footer -->
+  <text x="48" y="920" font-size="12" fill="#9CA3AF">Everything lands in one place: whether detected inside the cluster (vmalert) or from the internet (Lambda probe), an incident is an open GitHub Issue — and Slack relays it in real time.</text>
+</svg>

@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 980" width="1560" height="980" font-family="ui-sans-serif, -apple-system, 'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="cardShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#101828" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrIndigo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4F46E5"/>
+    </marker>
+    <marker id="arrAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D97706"/>
+    </marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#059669"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1560" height="980" fill="#F6F7F9"/>
+
+  <!-- header -->
+  <text x="48" y="62" font-size="26" font-weight="700" fill="#111827">bons8i — Inside the cluster</text>
+  <text x="48" y="90" font-size="14" fill="#6B7280">Everything running on the node is declared in git and reconciled by ArgoCD — no imperative workloads</text>
+
+  <!-- legend -->
+  <g font-size="12" fill="#6B7280">
+    <line x1="1030" y1="56" x2="1070" y2="56" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrIndigo)"/>
+    <text x="1078" y="60">GitOps sync</text>
+    <line x1="1200" y1="56" x2="1240" y2="56" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+    <text x="1248" y="60">secrets</text>
+    <line x1="1030" y1="82" x2="1070" y2="82" stroke="#059669" stroke-width="2.5" marker-end="url(#arrGreen)"/>
+    <text x="1078" y="86">container images</text>
+    <rect x="1200" y="72" width="64" height="18" rx="9" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="1232" y="85" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
+    <text x="1272" y="86">= ArgoCD Application</text>
+  </g>
+
+  <!-- ===== external row ===== -->
+  <g>
+    <rect x="48" y="120" width="310" height="128" rx="12" fill="#FFFFFF" stroke="#E3E6EB" filter="url(#cardShadow)"/>
+    <text x="66" y="150" font-size="15" font-weight="600" fill="#111827">AWS SSM Parameter Store</text>
+    <text x="66" y="172" font-size="11.5" fill="#B45309" font-family="ui-monospace, 'SF Mono', Menlo, monospace">/bons8i/* (SecureString)</text>
+    <text x="66" y="194" font-size="12" fill="#6B7280">single source of truth for secrets</text>
+    <text x="66" y="216" font-size="12" fill="#6B7280">read by IAM user bons8i-eso (read-only)</text>
+  </g>
+
+  <g>
+    <rect x="430" y="120" width="560" height="128" rx="12" fill="#FFFFFF" stroke="#E3E6EB" filter="url(#cardShadow)"/>
+    <text x="448" y="150" font-size="15" font-weight="600" fill="#111827">GitHub — HagaSpa/bons8i</text>
+    <text x="448" y="172" font-size="12" fill="#6B7280">this repository: every manifest, Helm values and Kustomize base lives here</text>
+    <text x="448" y="198" font-size="12" fill="#6B7280">Actions CI: builds the status-page image natively on arm64 → pushes to ghcr.io,</text>
+    <text x="448" y="216" font-size="12" fill="#6B7280">then bumps the image tag via an auto-merged deploy PR (main is PR-only)</text>
+  </g>
+
+  <!-- ===== cluster container ===== -->
+  <rect x="48" y="300" width="1472" height="620" rx="16" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1.5"/>
+  <text x="88" y="908" font-size="12" font-weight="700" fill="#4338CA" letter-spacing="2">RASPBERRY PI 5 8GB · UBUNTU SERVER 24.04 ARM64 · KUBEADM + CONTAINERD · SINGLE NODE</text>
+
+  <!-- row 1 -->
+  <!-- external-secrets -->
+  <g>
+    <rect x="88" y="360" width="330" height="230" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="330" y="376" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="366" y="390" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app ×2</text>
+    <text x="106" y="392" font-size="15" font-weight="600" fill="#111827">External Secrets Operator</text>
+    <text x="106" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: external-secrets · v2.7.0</text>
+    <text x="106" y="438" font-size="12" fill="#6B7280">ClusterSecretStore aws-ssm +</text>
+    <text x="106" y="456" font-size="12" fill="#6B7280">ExternalSecrets (git-managed) render</text>
+    <text x="106" y="474" font-size="12" fill="#6B7280">SSM parameters into K8s Secrets (1h)</text>
+    <text x="106" y="502" font-size="12" fill="#374151" font-weight="600">Only out-of-band credential:</text>
+    <text x="106" y="522" font-size="11.5" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">Secret aws-ssm-credentials</text>
+    <text x="106" y="544" font-size="12" fill="#6B7280">everything else is derived from git</text>
+    <text x="106" y="562" font-size="12" fill="#6B7280">+ SSM (DR-drill verified — kind replay)</text>
+  </g>
+
+  <!-- argocd -->
+  <g>
+    <rect x="458" y="360" width="330" height="230" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="700" y="376" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="736" y="390" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
+    <text x="476" y="392" font-size="15" font-weight="600" fill="#111827">ArgoCD</text>
+    <text x="476" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: argocd · v3.4.5 · self-managed</text>
+    <text x="476" y="438" font-size="12" fill="#6B7280">App of Apps: root-app watches</text>
+    <text x="476" y="456" font-size="11.5" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">clusters/pi/argocd/apps/</text>
+    <text x="476" y="478" font-size="12" fill="#6B7280">and reconciles every card on this</text>
+    <text x="476" y="496" font-size="12" fill="#6B7280">diagram (ServerSideApply)</text>
+    <text x="476" y="524" font-size="12" fill="#374151" font-weight="600">Sync policy:</text>
+    <text x="476" y="544" font-size="12" fill="#6B7280">manual sync after diff review;</text>
+    <text x="476" y="562" font-size="12" fill="#6B7280">only status-page is automated (prune + selfHeal)</text>
+  </g>
+
+  <!-- cloudflared -->
+  <g>
+    <rect x="828" y="360" width="280" height="230" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="1020" y="376" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="1056" y="390" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
+    <text x="846" y="392" font-size="15" font-weight="600" fill="#111827">cloudflared</text>
+    <text x="846" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: cloudflared</text>
+    <text x="846" y="438" font-size="12" fill="#6B7280">Cloudflare Tunnel connector</text>
+    <text x="846" y="456" font-size="12" fill="#6B7280">(fig. 1) — routes public hostnames</text>
+    <text x="846" y="474" font-size="12" fill="#6B7280">to Grafana and status-page</text>
+    <text x="846" y="502" font-size="12" fill="#6B7280">tunnel credentials arrive as an</text>
+    <text x="846" y="520" font-size="12" fill="#6B7280">ExternalSecret-rendered Secret</text>
+  </g>
+
+  <!-- status-page -->
+  <g>
+    <rect x="1148" y="360" width="332" height="230" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="1392" y="376" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="1428" y="390" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
+    <text x="1166" y="392" font-size="15" font-weight="600" fill="#111827">status-page</text>
+    <text x="1166" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: status-page · auto-sync</text>
+    <text x="1166" y="438" font-size="12" fill="#6B7280">public status site: Rust BFF (axum)</text>
+    <text x="1166" y="456" font-size="12" fill="#6B7280">+ React SPA, one scratch image</text>
+    <text x="1166" y="482" font-size="12" fill="#374151" font-weight="600">Server-side reads:</text>
+    <text x="1166" y="502" font-size="12" fill="#6B7280">vmsingle (query API) · Alertmanager</text>
+    <text x="1166" y="520" font-size="12" fill="#6B7280">(active alerts) · GitHub Issues</text>
+    <text x="1166" y="546" font-size="12" fill="#6B7280">non-root · read-only rootfs ·</text>
+    <text x="1166" y="564" font-size="12" fill="#6B7280">requests = limits (single node)</text>
+  </g>
+
+  <!-- row 2 -->
+  <!-- monitoring -->
+  <g>
+    <rect x="88" y="640" width="720" height="240" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="708" y="656" width="82" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="749" y="670" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app ×2</text>
+    <text x="106" y="672" font-size="15" font-weight="600" fill="#111827">VictoriaMetrics k8s stack</text>
+    <text x="106" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: monitoring · chart 0.86.0 (release vmks)</text>
+    <!-- inner flow -->
+    <g>
+      <rect x="106" y="712" width="176" height="56" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <text x="194" y="734" font-size="12" font-weight="600" fill="#111827" text-anchor="middle">node-exporter ·</text>
+      <text x="194" y="752" font-size="12" font-weight="600" fill="#111827" text-anchor="middle">kube-state-metrics</text>
+      <path d="M 282 740 L 316 740" stroke="#4F46E5" stroke-width="2" marker-end="url(#arrIndigo)"/>
+      <rect x="322" y="712" width="120" height="56" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <text x="382" y="734" font-size="12" font-weight="600" fill="#111827" text-anchor="middle">vmagent</text>
+      <text x="382" y="752" font-size="11" fill="#6B7280" text-anchor="middle">scrape 30s</text>
+      <path d="M 442 740 L 476 740" stroke="#4F46E5" stroke-width="2" marker-end="url(#arrIndigo)"/>
+      <rect x="482" y="712" width="150" height="56" rx="8" fill="#EEF2FF" stroke="#C7D2FE"/>
+      <text x="557" y="734" font-size="12" font-weight="600" fill="#111827" text-anchor="middle">vmsingle (TSDB)</text>
+      <text x="557" y="752" font-size="11" fill="#4338CA" text-anchor="middle">13-month retention</text>
+      <path d="M 632 740 L 666 740" stroke="#4F46E5" stroke-width="2" marker-end="url(#arrIndigo)"/>
+      <rect x="672" y="712" width="112" height="56" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+      <text x="728" y="740" font-size="12" font-weight="600" fill="#111827" text-anchor="middle">Grafana</text>
+      <text x="728" y="756" font-size="11" fill="#6B7280" text-anchor="middle">(fig. 1)</text>
+    </g>
+    <text x="106" y="800" font-size="12" fill="#6B7280">alerting: vmalert evaluates VMRules → Alertmanager → alertmanager-to-github → GitHub Issues (fig. 3)</text>
+    <text x="106" y="824" font-size="12" fill="#6B7280">backup CronJobs: vmbackup (daily) · vm-archive (monthly) → S3 (fig. 3)</text>
+    <text x="106" y="852" font-size="12" fill="#6B7280">ESO scraped via VMPodScrape · control-plane scrapes disabled (127.0.0.1-bound on kubeadm)</text>
+  </g>
+
+  <!-- kube-system -->
+  <g>
+    <rect x="848" y="640" width="300" height="240" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="1060" y="656" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="1096" y="670" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
+    <text x="866" y="672" font-size="15" font-weight="600" fill="#111827">Cilium</text>
+    <text x="866" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: kube-system · 1.19.5</text>
+    <text x="866" y="718" font-size="12" fill="#6B7280">CNI with eBPF datapath;</text>
+    <text x="866" y="736" font-size="12" fill="#6B7280">kube-proxy replacement</text>
+    <text x="866" y="754" font-size="12" fill="#6B7280">(no iptables service proxy)</text>
+    <text x="866" y="782" font-size="12" fill="#6B7280">every Service/Pod flow in</text>
+    <text x="866" y="800" font-size="12" fill="#6B7280">these diagrams rides on it</text>
+  </g>
+
+  <!-- local-path -->
+  <g>
+    <rect x="1188" y="640" width="292" height="240" rx="12" fill="#FFFFFF" stroke="#D7DCF5" filter="url(#cardShadow)"/>
+    <rect x="1392" y="656" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
+    <text x="1428" y="670" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
+    <text x="1206" y="672" font-size="15" font-weight="600" fill="#111827">local-path-provisioner</text>
+    <text x="1206" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: local-path-storage · v0.0.36</text>
+    <text x="1206" y="718" font-size="12" fill="#6B7280">default StorageClass; dynamic</text>
+    <text x="1206" y="736" font-size="12" fill="#6B7280">PVs from node-local disk</text>
+    <text x="1206" y="764" font-size="12" fill="#374151" font-weight="600">Backing disk:</text>
+    <text x="1206" y="784" font-size="12" fill="#6B7280">NVMe Intel 660p 512GB at</text>
+    <text x="1206" y="802" font-size="11.5" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">/opt/local-path-provisioner</text>
+    <text x="1206" y="826" font-size="12" fill="#6B7280">(vmsingle PVC 30Gi lives here)</text>
+  </g>
+
+  <!-- ===== flows ===== -->
+  <!-- ssm -> eso -->
+  <path d="M 203 248 L 203 354" fill="none" stroke="#D97706" stroke-width="2.5" marker-end="url(#arrAmber)"/>
+  <text x="215" y="284" font-size="12" fill="#B45309" font-weight="600">GetParameter</text>
+  <text x="215" y="302" font-size="11" fill="#B45309">refresh 1h</text>
+
+  <!-- github -> argocd -->
+  <path d="M 623 248 L 623 354" fill="none" stroke="#4F46E5" stroke-width="2.5" marker-end="url(#arrIndigo)"/>
+  <text x="635" y="284" font-size="12" fill="#4338CA" font-weight="600">pull-based sync</text>
+  <text x="635" y="302" font-size="11" fill="#6366F1">Helm + Kustomize, branch main</text>
+
+  <!-- ghcr -> status-page -->
+  <path d="M 990 200 C 1240 200, 1300 260, 1314 354" fill="none" stroke="#059669" stroke-width="2.5" marker-end="url(#arrGreen)"/>
+  <text x="1120" y="188" font-size="12" fill="#047857" font-weight="600">image pull — ghcr.io (arm64)</text>
+
+  <!-- eso -> cloudflared (secrets), routed through the gap between rows -->
+  <path d="M 418 566 C 480 566, 490 618, 580 618 L 936 618 C 958 618, 968 612, 968 600" fill="none" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrAmber)"/>
+  <text x="660" y="638" font-size="11" fill="#B45309">tunnel credentials</text>
+
+  <!-- eso -> monitoring (secrets) -->
+  <path d="M 150 590 L 150 634" fill="none" stroke="#D97706" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrAmber)"/>
+  <text x="162" y="608" font-size="11" fill="#B45309">grafana admin · github token</text>
+  <text x="162" y="624" font-size="11" fill="#B45309">· S3 creds (vmbackup)</text>
+
+  <!-- footer note -->
+  <text x="48" y="954" font-size="12" fill="#9CA3AF">The kubeadm/containerd substrate itself is the only imperative, one-time bootstrap step — everything above it is GitOps-managed.</text>
+</svg>
