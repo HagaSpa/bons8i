@@ -1,0 +1,12 @@
+{
+  "name": "render-architecture",
+  "private": true,
+  "type": "module",
+  "description": "clusters/pi/architecture/*.svg を 2x PNG にレンダリングする",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.0.0"
+  }
+}
