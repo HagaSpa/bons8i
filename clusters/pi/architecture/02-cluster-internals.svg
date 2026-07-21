@@ -52,7 +52,7 @@
 
   <!-- ===== cluster container ===== -->
   <rect x="48" y="300" width="1472" height="620" rx="16" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1.5"/>
-  <text x="88" y="908" font-size="12" font-weight="700" fill="#4338CA" letter-spacing="2">RASPBERRY PI 5 8GB · UBUNTU SERVER 24.04 ARM64 · KUBEADM + CONTAINERD · SINGLE NODE</text>
+  <text x="88" y="908" font-size="12" font-weight="700" fill="#4338CA" letter-spacing="2">RASPBERRY PI 5 8GB · UBUNTU SERVER ARM64 · KUBEADM + CONTAINERD · SINGLE NODE</text>
 
   <!-- row 1 -->
   <!-- external-secrets -->
@@ -61,7 +61,7 @@
     <rect x="330" y="376" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
     <text x="366" y="390" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app ×2</text>
     <text x="106" y="392" font-size="15" font-weight="600" fill="#111827">External Secrets Operator</text>
-    <text x="106" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: external-secrets · v2.7.0</text>
+    <text x="106" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: external-secrets</text>
     <text x="106" y="438" font-size="12" fill="#6B7280">ClusterSecretStore aws-ssm +</text>
     <text x="106" y="456" font-size="12" fill="#6B7280">ExternalSecrets (git-managed) render</text>
     <text x="106" y="474" font-size="12" fill="#6B7280">SSM parameters into K8s Secrets (1h)</text>
@@ -77,7 +77,7 @@
     <rect x="700" y="376" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
     <text x="736" y="390" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
     <text x="476" y="392" font-size="15" font-weight="600" fill="#111827">ArgoCD</text>
-    <text x="476" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: argocd · v3.4.5 · self-managed</text>
+    <text x="476" y="412" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: argocd · self-managed</text>
     <text x="476" y="438" font-size="12" fill="#6B7280">App of Apps: root-app watches</text>
     <text x="476" y="456" font-size="11.5" fill="#6B7280" font-family="ui-monospace, 'SF Mono', Menlo, monospace">clusters/pi/argocd/apps/</text>
     <text x="476" y="478" font-size="12" fill="#6B7280">and reconciles every card on this</text>
@@ -124,7 +124,7 @@
     <rect x="708" y="656" width="82" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
     <text x="749" y="670" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app ×2</text>
     <text x="106" y="672" font-size="15" font-weight="600" fill="#111827">VictoriaMetrics k8s stack</text>
-    <text x="106" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: monitoring · chart 0.86.0 (release vmks)</text>
+    <text x="106" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: monitoring · release vmks</text>
     <!-- inner flow -->
     <g>
       <rect x="106" y="712" width="176" height="56" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
@@ -154,7 +154,7 @@
     <rect x="1060" y="656" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
     <text x="1096" y="670" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
     <text x="866" y="672" font-size="15" font-weight="600" fill="#111827">Cilium</text>
-    <text x="866" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: kube-system · 1.19.5</text>
+    <text x="866" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: kube-system</text>
     <text x="866" y="718" font-size="12" fill="#6B7280">CNI with eBPF datapath;</text>
     <text x="866" y="736" font-size="12" fill="#6B7280">kube-proxy replacement</text>
     <text x="866" y="754" font-size="12" fill="#6B7280">(no iptables service proxy)</text>
@@ -168,7 +168,7 @@
     <rect x="1392" y="656" width="72" height="20" rx="10" fill="#EEF2FF" stroke="#C7D2FE"/>
     <text x="1428" y="670" font-size="10.5" fill="#4338CA" text-anchor="middle" font-weight="600">Argo app</text>
     <text x="1206" y="672" font-size="15" font-weight="600" fill="#111827">local-path-provisioner</text>
-    <text x="1206" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: local-path-storage · v0.0.36</text>
+    <text x="1206" y="692" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">ns: local-path-storage</text>
     <text x="1206" y="718" font-size="12" fill="#6B7280">default StorageClass; dynamic</text>
     <text x="1206" y="736" font-size="12" fill="#6B7280">PVs from node-local disk</text>
     <text x="1206" y="764" font-size="12" fill="#374151" font-weight="600">Backing disk:</text>

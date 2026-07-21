@@ -1,7 +1,7 @@
 # clusters/pi/
 
 Bootstrap materials and GitOps manifests for the single-node **Raspberry Pi 5**
-cluster (`kubeadm`, Ubuntu Server 24.04 arm64).
+cluster (`kubeadm`, Ubuntu Server arm64).
 
 ## Architecture
 
@@ -41,8 +41,8 @@ GitHub Issues.
 | Component | Purpose | Delivery method | Status |
 |---|---|---|---|
 | `kubeadm` + `containerd` | Cluster bootstrap: control plane, kubelet, CRI | Manual, one-time (predates Kubernetes; not a GitOps target) | Not GitOps-managed (cluster substrate) |
-| **Cilium** 1.19.5 | CNI, kube-proxy replacement (eBPF) | ArgoCD Helm source Application (values inline) | Adopted from an imperative `helm` release |
-| **local-path-provisioner** v0.0.36 | Default `StorageClass`, dynamic PV provisioning from the NVMe disk | ArgoCD git source Application, Kustomize **remote base** pointing at the upstream repo | Adopted from an imperative `kubectl apply` |
+| **Cilium** | CNI, kube-proxy replacement (eBPF) | ArgoCD Helm source Application (values inline) | Adopted from an imperative `helm` release |
+| **local-path-provisioner** | Default `StorageClass`, dynamic PV provisioning from the NVMe disk | ArgoCD git source Application, Kustomize **remote base** pointing at the upstream repo | Adopted from an imperative `kubectl apply` |
 | **ArgoCD** | GitOps controller (App of Apps, self-managed) | Self-managed: git source Application, Kustomize remote base pointing at the official install manifests | Bootstrap |
 | **External Secrets Operator** | Renders AWS SSM Parameter Store (`/bons8i/*`, SecureString) into K8s Secrets; the only out-of-band credential is the `aws-ssm-credentials` Secret | ArgoCD Helm source Application + git source Application (`ClusterSecretStore`, `ExternalSecret`s) | Native GitOps (replaced sealed-secrets) |
 | **VictoriaMetrics k8s stack** (vmsingle, vmagent, vmalert, alertmanager, kube-state-metrics, node-exporter, Grafana) | Metrics collection (13-month retention), alert evaluation, dashboards | ArgoCD Helm source Application (values inline) | Native GitOps |
