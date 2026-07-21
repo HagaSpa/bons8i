@@ -140,7 +140,7 @@
   <g>
     <rect x="810" y="570" width="330" height="130" rx="12" fill="#FFFFFF" stroke="#F3D1D1" filter="url(#cardShadow)"/>
     <text x="828" y="602" font-size="15" font-weight="600" fill="#111827">alertmanager-to-github</text>
-    <text x="828" y="624" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">pfnet-research · v0.3.0</text>
+    <text x="828" y="624" font-size="11" fill="#818CF8" font-family="ui-monospace, 'SF Mono', Menlo, monospace">pfnet-research</text>
     <text x="828" y="650" font-size="12" fill="#6B7280">firing alert → GitHub Issue with label</text>
     <text x="828" y="668" font-size="12" fill="#6B7280">alert; resolves → close; recurs → reopen</text>
     <text x="828" y="686" font-size="12" fill="#6B7280">(GitHub PAT via ExternalSecret)</text>
