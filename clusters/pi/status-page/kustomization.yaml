@@ -7,4 +7,4 @@ resources:
 
 images:
 - name: ghcr.io/hagaspa/bons8i/status-page
-  newTag: e92305de04f083489d3efe816d3458012b6eac6b
+  newTag: db099796d363b82bb7718e02aa74c0a45ab0dbf5
