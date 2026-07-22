@@ -13,6 +13,7 @@ spec:
       labels:
         app: status-page
     spec:
+      serviceAccountName: status-page
       containers:
         - name: status-page
           image: ghcr.io/hagaspa/bons8i/status-page

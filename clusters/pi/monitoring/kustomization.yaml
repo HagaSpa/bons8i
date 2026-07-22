@@ -10,3 +10,4 @@ resources:
   - cronjob-vm-archive.yaml
   - deployment.yaml
   - service.yaml
+  - serviceaccount.yaml

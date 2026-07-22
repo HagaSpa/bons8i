@@ -13,6 +13,7 @@ spec:
       labels:
         app: cloudflared
     spec:
+      serviceAccountName: cloudflared
       containers:
         - name: cloudflared
           image: cloudflare/cloudflared:2026.7.1

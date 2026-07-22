@@ -22,6 +22,7 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          serviceAccountName: vm-archive
           containers:
             - name: vm-archive
               image: amazon/aws-cli:2.36.2
