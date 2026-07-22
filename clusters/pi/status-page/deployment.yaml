@@ -40,7 +40,6 @@ spec:
               memory: 32Mi
             limits:
               memory: 32Mi
-          # 外部公開される唯一のワークロードなので最小権限で固める
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534

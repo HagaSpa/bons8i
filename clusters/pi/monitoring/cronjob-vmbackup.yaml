@@ -51,6 +51,13 @@ spec:
                 - name: vmdata
                   mountPath: /victoria-metrics-data
                   readOnly: true
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
           volumes:
             - name: vmdata
               persistentVolumeClaim:
