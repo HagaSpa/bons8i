@@ -20,6 +20,7 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          serviceAccountName: vmbackup
           containers:
             - name: vmbackup
               # vmsingle と同版を維持する（バージョン更新時はセットで上げる）

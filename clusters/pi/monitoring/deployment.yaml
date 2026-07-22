@@ -13,6 +13,7 @@ spec:
       labels:
         app: alertmanager-to-github
     spec:
+      serviceAccountName: alertmanager-to-github
       containers:
         - name: alertmanager-to-github
           image: ghcr.io/pfnet-research/alertmanager-to-github:v0.3.0
