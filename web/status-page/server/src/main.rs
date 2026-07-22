@@ -93,6 +93,7 @@ async fn main() {
 }
 
 // シャットダウンを待機する非同期関数
+// https://github.com/tokio-rs/axum/blob/main/examples/graceful-shutdown/src/main.rs#L54-L76
 async fn shutdown_signal() {
     let sig_int = async {
         signal::ctrl_c()
