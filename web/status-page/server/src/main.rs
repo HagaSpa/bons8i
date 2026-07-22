@@ -5,15 +5,16 @@ mod upstream;
 use std::sync::Arc;
 use std::time::Duration;
 
+use axum::Router;
 use axum::extract::State;
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{StatusCode, Uri};
 use axum::response::{IntoResponse, Json, Response};
 use axum::routing::get;
-use axum::Router;
 use rust_embed::RustEmbed;
 
 use cache::Cache;
+use tokio::signal;
 use types::{FiringAlert, MetricCards, Overall, StatusResponse, UptimeResponse};
 
 // コンパイルには frontend/dist/ の実在が必要（先に `npm run build` を実行しておく）
@@ -61,9 +62,7 @@ async fn main() {
             .tls_certs_only(
                 webpki_root_certs::TLS_SERVER_ROOT_CERTS
                     .iter()
-                    .map(|der| {
-                        reqwest::Certificate::from_der(der).expect("bundled webpki root")
-                    })
+                    .map(|der| reqwest::Certificate::from_der(der).expect("bundled webpki root"))
                     .collect::<Vec<_>>(),
             )
             .timeout(Duration::from_secs(10))
@@ -88,11 +87,32 @@ async fn main() {
     tracing::info!(addr, vm = state.vm_url, am = state.am_url, "starting");
     let listener = tokio::net::TcpListener::bind(&addr).await.expect("bind");
     axum::serve(listener, app)
-        .with_graceful_shutdown(async {
-            let _ = tokio::signal::ctrl_c().await;
-        })
+        .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("server");
+}
+
+// シャットダウンを待機する非同期関数
+async fn shutdown_signal() {
+    let sig_int = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to prepare Ctrl+C handler")
+    };
+    let sig_term = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to prepare terminate signal handler")
+            .recv()
+            .await
+    };
+    tokio::select! {
+        _ = sig_int => {
+            tracing::info!("SIGINT received, starting graceful shutdown")
+        },
+        _ = sig_term => {
+            tracing::info!("SIGTERM received, starting graceful shutdown")
+        },
+    }
 }
 
 /// 同梱した React 成果物の配信。Vite の assets/ はファイル名にハッシュが入るので
@@ -141,7 +161,9 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         })
         .await;
 
-    let issues = cached_issues(&state).await.map(|list| upstream::issue_stats(&list));
+    let issues = cached_issues(&state)
+        .await
+        .map(|list| upstream::issue_stats(&list));
 
     let (alerts, metrics) = cluster.unwrap_or((None, MetricCards::default()));
     let (overall, firing_alerts) = match alerts {
