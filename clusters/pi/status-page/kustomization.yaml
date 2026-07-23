@@ -5,6 +5,7 @@ resources:
 - deployment.yaml
 - service.yaml
 - serviceaccount.yaml
+- networkpolicy.yaml
 
 images:
 - name: ghcr.io/hagaspa/bons8i/status-page
