@@ -30,10 +30,10 @@ impl<T: Clone> Cache<T> {
         Fut: Future<Output = Option<T>>,
     {
         let mut guard = self.inner.lock().await;
-        if let Some(entry) = guard.as_ref() {
-            if entry.fetched_at.elapsed() < self.ttl {
-                return Some(entry.value.clone());
-            }
+        if let Some(entry) = guard.as_ref()
+            && entry.fetched_at.elapsed() < self.ttl
+        {
+            return Some(entry.value.clone());
         }
         match refresh().await {
             Some(value) => {
