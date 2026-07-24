@@ -6,6 +6,7 @@ resources:
   - externalsecret-vmbackup.yaml
   - vmrule-eso.yaml
   - vmrule-backup.yaml
+  - vmrule-node.yaml
   - cronjob-vmbackup.yaml
   - cronjob-vm-archive.yaml
   - deployment.yaml

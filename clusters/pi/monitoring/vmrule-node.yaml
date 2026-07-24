@@ -1,0 +1,27 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: metrics-node
+  namespace: monitoring
+spec:
+  groups:
+    - name: metrics-node
+      rules:
+        - alert: NodeCpuTempHigh
+          expr: max(node_thermal_zone_temp{type="cpu-thermal"}) > 70
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Pi CPU temperature above 70°C for 10 minutes'
+            description: 'Please check the CPU active cooler.'
+        - alert: NodeCpuTempCritical
+          expr: max(node_thermal_zone_temp{type="cpu-thermal"}) > 80
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: 'Pi CPU temperature reached 80°C'
+            description: |
+              Emergency! Go Home!
+              If left unaddressed, the system will enter protective mode with hard throttling/automatic shutdown. Check cooling immediately.
