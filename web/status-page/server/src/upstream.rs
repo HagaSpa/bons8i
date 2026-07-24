@@ -5,8 +5,7 @@ use crate::types::{FiringAlert, IssueStats, MetricCards, OutageWindow};
 
 // クエリはコードに固定。ユーザー入力は上流に一切届かない
 const Q_NODE_TEMP: &str = "max(node_hwmon_temp_celsius)";
-const Q_CPU_PERCENT: &str =
-    r#"100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))"#;
+const Q_CPU_PERCENT: &str = r#"100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))"#;
 const Q_MEM_PERCENT: &str =
     "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
 const Q_UPTIME_SECONDS: &str = "time() - max(node_boot_time_seconds)";
@@ -198,18 +197,21 @@ pub fn outage_windows(issues: &[GhIssue]) -> Vec<OutageWindow> {
 mod tests {
     use super::*;
 
-    fn issue(
-        number: u32,
-        labels: &[&str],
-        created_at: &str,
-        closed_at: Option<&str>,
-    ) -> GhIssue {
+    fn issue(number: u32, labels: &[&str], created_at: &str, closed_at: Option<&str>) -> GhIssue {
         GhIssue {
             number,
-            state: if closed_at.is_some() { "closed" } else { "open" }.into(),
+            state: if closed_at.is_some() {
+                "closed"
+            } else {
+                "open"
+            }
+            .into(),
             created_at: created_at.parse().unwrap(),
             closed_at: closed_at.map(|c| c.parse().unwrap()),
-            labels: labels.iter().map(|n| GhLabel { name: (*n).into() }).collect(),
+            labels: labels
+                .iter()
+                .map(|n| GhLabel { name: (*n).into() })
+                .collect(),
             pull_request: None,
         }
     }
@@ -217,15 +219,28 @@ mod tests {
     #[test]
     fn outage_windows_filters_by_label() {
         let issues = vec![
-            issue(69, &["alert", "outage"], "2026-07-16T10:34:47Z", Some("2026-07-16T10:39:24Z")),
-            issue(65, &["alert"], "2026-07-16T11:05:00Z", Some("2026-07-16T11:15:00Z")),
+            issue(
+                69,
+                &["alert", "outage"],
+                "2026-07-16T10:34:47Z",
+                Some("2026-07-16T10:39:24Z"),
+            ),
+            issue(
+                65,
+                &["alert"],
+                "2026-07-16T11:05:00Z",
+                Some("2026-07-16T11:15:00Z"),
+            ),
             issue(90, &["alert", "outage"], "2026-07-18T00:00:00Z", None),
         ];
         let windows = outage_windows(&issues);
         assert_eq!(windows.len(), 2);
         assert_eq!(windows[0].issue_number, 69);
         assert_eq!(windows[0].started_at, "2026-07-16T10:34:47+00:00");
-        assert_eq!(windows[0].ended_at.as_deref(), Some("2026-07-16T10:39:24+00:00"));
+        assert_eq!(
+            windows[0].ended_at.as_deref(),
+            Some("2026-07-16T10:39:24+00:00")
+        );
         // open 中の Issue は ended_at が無い = 障害継続中
         assert_eq!(windows[1].issue_number, 90);
         assert_eq!(windows[1].ended_at, None);
