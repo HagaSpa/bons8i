@@ -11,9 +11,9 @@ async function probeTarget(url) {
         console.log(`attempt ${attempt}: HTTP ${res.status} ok`);
         return true;
       }
-      console.log(`attempt ${attempt}: HTTP ${res.status}`);
+      console.warn(`attempt ${attempt}: HTTP ${res.status}`);
     } catch (err) {
-      console.log(`attempt ${attempt}: ${err.name}`);
+      console.error(`attempt ${attempt}: ${err.name}`);
     }
     if (attempt < 3) await sleep(30_000);
   }
