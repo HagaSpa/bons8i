@@ -4,7 +4,7 @@ use serde::Deserialize;
 use crate::types::{FiringAlert, IssueStats, MetricCards, OutageWindow};
 
 // クエリはコードに固定。ユーザー入力は上流に一切届かない
-const Q_NODE_TEMP: &str = "max(node_hwmon_temp_celsius)";
+const Q_NODE_TEMP: &str = "max(node_thermal_zone_temp{type=\"cpu-thermal\"})";
 const Q_CPU_PERCENT: &str = r#"100 * (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])))"#;
 const Q_MEM_PERCENT: &str =
     "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
