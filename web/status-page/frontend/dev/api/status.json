@@ -1,0 +1,17 @@
+{
+  "overall": "operational",
+  "firingAlerts": [],
+  "metrics": {
+    "nodeTempCelsius": 52.35,
+    "cpuUsagePercent": 14.294999999993397,
+    "memoryUsagePercent": 62.283001020708475,
+    "uptimeSeconds": 1204672.7850000858,
+    "runningPods": 31
+  },
+  "issues": {
+    "openCount": 0,
+    "closedCount30d": 11,
+    "avgHoursToClose30d": 0.4497222222222222
+  },
+  "generatedAt": "2026-07-25T00:34:06.794919875+00:00"
+}
