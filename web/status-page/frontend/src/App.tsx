@@ -5,8 +5,9 @@ import UptimePage from "./UptimePage";
 
 // BFF のクラスタキャッシュ TTL と同周期
 const REFRESH_MS = 60_000;
-
 const REPO_URL = "https://github.com/HagaSpa/bons8i";
+const CPU_TEMP_WARN = 70;
+const CPU_TEMP_ALERT = 80;
 
 function useStatus() {
   const [status, setStatus] = useState<StatusResponse | null>(null);
@@ -85,9 +86,9 @@ const fmt = {
   time: (iso: string) => new Date(iso).toLocaleTimeString(),
 };
 
-function Card({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Card({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
   return (
-    <div className="card">
+    <div className={`card ${className ? className : ""}`}>
       <div className="card-label">{label}</div>
       <div className="card-value">{value}</div>
       {hint && <div className="card-hint">{hint}</div>}
@@ -115,6 +116,9 @@ function AlertRow({ alert }: { alert: FiringAlert }) {
 function StatusPage({ status }: { status: StatusResponse | null }) {
   const m = status?.metrics;
   const issues = status?.issues ?? null;
+  const cpuTempClass = m?.nodeTempCelsius != null
+    ? (m.nodeTempCelsius > CPU_TEMP_ALERT ? "bad" : m.nodeTempCelsius > CPU_TEMP_WARN ? "warn" : "")
+    : "";
 
   return (
     <>
@@ -132,7 +136,7 @@ function StatusPage({ status }: { status: StatusResponse | null }) {
       <section>
         <h2>Cluster</h2>
         <div className="grid">
-          <Card label="Node temperature" value={fmt.num(m?.nodeTempCelsius ?? null, 1, " °C")} />
+          <Card label="Node temperature" value={fmt.num(m?.nodeTempCelsius ?? null, 1, " °C")} className={cpuTempClass} />
           <Card label="CPU usage" value={fmt.num(m?.cpuUsagePercent ?? null, 1, " %")} />
           <Card label="Memory usage" value={fmt.num(m?.memoryUsagePercent ?? null, 1, " %")} />
           <Card label="Uptime" value={fmt.uptime(m?.uptimeSeconds ?? null)} />
