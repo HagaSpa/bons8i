@@ -16,7 +16,11 @@
   --warn-bg-soft: rgba(217, 119, 6, 0.04);
   --bad-bg-soft: rgba(220, 38, 38, 0.06);
 
-  font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+  font:
+    16px/1.5 system-ui,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   color-scheme: light;
   color: var(--text);
   background: var(--bg);

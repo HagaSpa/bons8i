@@ -86,7 +86,17 @@ const fmt = {
   time: (iso: string) => new Date(iso).toLocaleTimeString(),
 };
 
-function Card({ label, value, hint, className }: { label: string; value: string; hint?: string; className?: string }) {
+function Card({
+  label,
+  value,
+  hint,
+  className,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  className?: string;
+}) {
   return (
     <div className={`card ${className ? className : ""}`}>
       <div className="card-label">{label}</div>
@@ -99,15 +109,11 @@ function Card({ label, value, hint, className }: { label: string; value: string;
 function AlertRow({ alert }: { alert: FiringAlert }) {
   return (
     <li className="alert-row">
-      <span className={`severity ${alert.severity ?? "none"}`}>
-        {alert.severity ?? "unknown"}
-      </span>
+      <span className={`severity ${alert.severity ?? "none"}`}>{alert.severity ?? "unknown"}</span>
       <span className="alert-name">{alert.name}</span>
       {alert.summary && <span className="alert-summary">{alert.summary}</span>}
       {alert.startedAt && (
-        <span className="alert-since">
-          since {new Date(alert.startedAt).toLocaleString()}
-        </span>
+        <span className="alert-since">since {new Date(alert.startedAt).toLocaleString()}</span>
       )}
     </li>
   );
@@ -116,9 +122,14 @@ function AlertRow({ alert }: { alert: FiringAlert }) {
 function StatusPage({ status }: { status: StatusResponse | null }) {
   const m = status?.metrics;
   const issues = status?.issues ?? null;
-  const cpuTempClass = m?.nodeTempCelsius != null
-    ? (m.nodeTempCelsius > CPU_TEMP_ALERT ? "bad" : m.nodeTempCelsius > CPU_TEMP_WARN ? "warn" : "")
-    : "";
+  const cpuTempClass =
+    m?.nodeTempCelsius != null
+      ? m.nodeTempCelsius > CPU_TEMP_ALERT
+        ? "bad"
+        : m.nodeTempCelsius > CPU_TEMP_WARN
+          ? "warn"
+          : ""
+      : "";
 
   return (
     <>
@@ -136,7 +147,11 @@ function StatusPage({ status }: { status: StatusResponse | null }) {
       <section>
         <h2>Cluster</h2>
         <div className="grid">
-          <Card label="Node temperature" value={fmt.num(m?.nodeTempCelsius ?? null, 1, " °C")} className={cpuTempClass} />
+          <Card
+            label="Node temperature"
+            value={fmt.num(m?.nodeTempCelsius ?? null, 1, " °C")}
+            className={cpuTempClass}
+          />
           <Card label="CPU usage" value={fmt.num(m?.cpuUsagePercent ?? null, 1, " %")} />
           <Card label="Memory usage" value={fmt.num(m?.memoryUsagePercent ?? null, 1, " %")} />
           <Card label="Uptime" value={fmt.uptime(m?.uptimeSeconds ?? null)} />
@@ -148,16 +163,12 @@ function StatusPage({ status }: { status: StatusResponse | null }) {
         <h2>Alert history</h2>
         <p className="section-note">
           Every firing alert is filed as a{" "}
-          <a href={`${REPO_URL}/issues?q=is%3Aissue`}>GitHub Issue</a> and
-          auto-closed when it resolves — an open issue means an incident is
-          ongoing.
+          <a href={`${REPO_URL}/issues?q=is%3Aissue`}>GitHub Issue</a> and auto-closed when it
+          resolves — an open issue means an incident is ongoing.
         </p>
         <div className="grid">
           <Card label="Open issues" value={issues ? String(issues.openCount) : "–"} />
-          <Card
-            label="Closed (30 days)"
-            value={issues ? String(issues.closedCount30d) : "–"}
-          />
+          <Card label="Closed (30 days)" value={issues ? String(issues.closedCount30d) : "–"} />
           <Card
             label="Avg. time to close"
             value={fmt.hours(issues?.avgHoursToClose30d ?? null)}
@@ -177,9 +188,7 @@ const TABS = [
 export default function App() {
   const { status, unreachable } = useStatus();
   const { path, navigate } = usePath();
-  const badgeKind: BadgeKind = unreachable
-    ? "unreachable"
-    : (status?.overall ?? "loading");
+  const badgeKind: BadgeKind = unreachable ? "unreachable" : (status?.overall ?? "loading");
   const badge = BADGE[badgeKind];
 
   return (
@@ -187,9 +196,8 @@ export default function App() {
       <header>
         <h1>🪴 bons8i status</h1>
         <p className="subtitle">
-          Live status of a single-node Raspberry Pi 5 Kubernetes cluster
-          (kubeadm), reconciled by ArgoCD from{" "}
-          <a href={REPO_URL}>HagaSpa/bons8i</a>.
+          Live status of a single-node Raspberry Pi 5 Kubernetes cluster (kubeadm), reconciled by
+          ArgoCD from <a href={REPO_URL}>HagaSpa/bons8i</a>.
         </p>
       </header>
 
@@ -214,11 +222,7 @@ export default function App() {
         ))}
       </nav>
 
-      {path === "/uptime" ? (
-        <UptimePage repoUrl={REPO_URL} />
-      ) : (
-        <StatusPage status={status} />
-      )}
+      {path === "/uptime" ? <UptimePage repoUrl={REPO_URL} /> : <StatusPage status={status} />}
 
       <footer>
         {status && <span>Updated {fmt.time(status.generatedAt)} · refreshes every 60 s</span>}
