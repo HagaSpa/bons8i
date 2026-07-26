@@ -12,6 +12,9 @@
   --dim-bg: rgba(120, 113, 108, 0.12);
   --warn: #d97706;
   --warn-bg: rgba(217, 119, 6, 0.16);
+  /* カードの面塗り用。badge / calendar と違い面積が広いので彩度を落とす */
+  --warn-bg-soft: rgba(217, 119, 6, 0.04);
+  --bad-bg-soft: rgba(220, 38, 38, 0.06);
 
   font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
@@ -105,6 +108,16 @@ a {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 14px 16px;
+}
+
+.card.warn {
+  background: var(--warn-bg-soft);
+  border: 1px solid var(--warn);
+}
+
+.card.bad {
+  background: var(--bad-bg-soft);
+  border: 1px solid var(--bad);
 }
 
 .card-label {
