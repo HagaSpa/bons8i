@@ -59,10 +59,7 @@ export function uptimePercent(windows: OutageWindow[], from: Date, now: Date): n
   let down = 0;
   for (const w of windows) {
     const start = Math.max(new Date(w.startedAt).getTime(), from.getTime());
-    const end = Math.min(
-      (w.endedAt ? new Date(w.endedAt) : now).getTime(),
-      now.getTime(),
-    );
+    const end = Math.min((w.endedAt ? new Date(w.endedAt) : now).getTime(), now.getTime());
     if (end > start) down += end - start;
   }
   return 100 * (1 - down / total);
@@ -73,12 +70,7 @@ export type DayState = "ok" | "partial" | "major" | "nodata" | "future";
 const MAJOR_THRESHOLD_SECONDS = 3600;
 
 /** 色の閾値: 緑 = 0 / 黄 = 1h 未満 / 赤 = 1h 以上 / 灰 = 観測なし（since 前・未来） */
-export function dayState(
-  day: Date,
-  info: DayInfo | undefined,
-  since: Date,
-  now: Date,
-): DayState {
+export function dayState(day: Date, info: DayInfo | undefined, since: Date, now: Date): DayState {
   if (day.getTime() > now.getTime()) return "future";
   if (day.getTime() < startOfLocalDay(since).getTime()) return "nodata";
   const seconds = info?.downtimeSeconds ?? 0;

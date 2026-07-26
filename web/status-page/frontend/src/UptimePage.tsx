@@ -64,8 +64,9 @@ function MonthCalendar({
   const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const cells: (Date | null)[] = [
     ...Array<null>(first.getDay()).fill(null),
-    ...Array.from({ length: daysInMonth }, (_, i) =>
-      new Date(first.getFullYear(), first.getMonth(), i + 1),
+    ...Array.from(
+      { length: daysInMonth },
+      (_, i) => new Date(first.getFullYear(), first.getMonth(), i + 1),
     ),
   ];
 
@@ -152,10 +153,7 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
     });
   }, [now]);
 
-  const byDay = useMemo(
-    () => downtimeByDay(data?.windows ?? [], now),
-    [data, now],
-  );
+  const byDay = useMemo(() => downtimeByDay(data?.windows ?? [], now), [data, now]);
 
   if (failed) {
     return <p className="section-note">Failed to load uptime data.</p>;
@@ -166,9 +164,7 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
 
   const since = new Date(data.since);
   // 「観測なし」の日を分母に入れない: 表示範囲の開始と since の遅い方から数える
-  const observedFrom = new Date(
-    Math.max(months[0].getTime(), startOfLocalDay(since).getTime()),
-  );
+  const observedFrom = new Date(Math.max(months[0].getTime(), startOfLocalDay(since).getTime()));
   const percent = uptimePercent(data.windows, observedFrom, now);
 
   return (
@@ -176,10 +172,10 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
       <section>
         <h2>Uptime</h2>
         <p className="section-note">
-          Daily availability of <strong>bons8i.hagaspa.com</strong> as seen by an external
-          probe (AWS Lambda, every 10 minutes). Outage windows are recorded as{" "}
-          <a href={`${repoUrl}/issues?q=label%3Aoutage`}>GitHub Issues</a> — open means an
-          outage is ongoing.
+          Daily availability of <strong>bons8i.hagaspa.com</strong> as seen by an external probe
+          (AWS Lambda, every 10 minutes). Outage windows are recorded as{" "}
+          <a href={`${repoUrl}/issues?q=label%3Aoutage`}>GitHub Issues</a> — open means an outage is
+          ongoing.
         </p>
         {percent != null && (
           <div className="uptime-summary">
