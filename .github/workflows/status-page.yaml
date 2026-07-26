@@ -1,6 +1,5 @@
 name: status-page
 
-# この workflow 自身の変更でも起動させる（CI の変更を CI で検証できるように）
 on:
   push:
     branches: [main]
@@ -13,8 +12,6 @@ env:
 
 jobs:
   check-frontend:
-    # build と同じ arm64。npm ci は lockfile の整合性検証も兼ねるので、
-    # プラットフォーム依存の不整合（PR #138）を本番と同じ arch で踏み抜ける
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -24,7 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Dockerfile の node:24-alpine と揃える
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
@@ -34,7 +30,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
-      # tsc -b の型チェックを含む
       - run: npm run build
 
   check-server:
@@ -47,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Dockerfile の rust:1.97-alpine と揃える。Renovate が Dockerfile を上げたらここも追随させる
+      # Dockerfile の rust:1.97-alpine と一致させる
       - uses: dtolnay/rust-toolchain@1.97
         with:
           components: rustfmt, clippy
@@ -56,11 +51,8 @@ jobs:
         with:
           workspaces: web/status-page/server
 
-      # rust-embed が ../frontend/dist/ をコンパイル時に読む（src/main.rs:20 の注記）。
-      # lint / test に中身は不要なので空ディレクトリで足りる。実物を埋め込んだ
-      # 検証は build ジョブ（Dockerfile が frontend ステージから dist を COPY）が担う
-      - name: Create empty frontend/dist for rust-embed
-        run: mkdir -p ../frontend/dist
+      # rust-embed が dist/ をコンパイル時に要求する（中身は不要）
+      - run: mkdir -p ../frontend/dist
 
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
@@ -95,8 +87,6 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    # 品質チェックを通らなければ Pi へ配信しない。build（ghcr への push）は
-    # フィードバックを速くするため check と並列に走らせる
     needs: [build, check-frontend, check-server]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
