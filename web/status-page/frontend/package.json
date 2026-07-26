@@ -1,12 +1,14 @@
 {
   "name": "status-page-frontend",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "oxfmt": "^0.60.0",
     "oxlint": "^1.71.0",
     "typescript": "~7.0.0",
     "vite": "^8.1.1"
