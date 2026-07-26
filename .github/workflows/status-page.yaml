@@ -1,16 +1,65 @@
 name: status-page
 
+# この workflow 自身の変更でも起動させる（CI の変更を CI で検証できるように）
 on:
   push:
     branches: [main]
-    paths: ["web/status-page/**"]
+    paths: ["web/status-page/**", ".github/workflows/status-page.yaml"]
   pull_request:
-    paths: ["web/status-page/**"]
+    paths: ["web/status-page/**", ".github/workflows/status-page.yaml"]
 
 env:
   IMAGE: ghcr.io/hagaspa/bons8i/status-page
 
 jobs:
+  check-frontend:
+    # build と同じ arm64。npm ci は lockfile の整合性検証も兼ねるので、
+    # プラットフォーム依存の不整合（PR #138）を本番と同じ arch で踏み抜ける
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web/status-page/frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      # Dockerfile の node:24-alpine と揃える
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/status-page/frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      # tsc -b の型チェックを含む
+      - run: npm run build
+
+  check-server:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web/status-page/server
+    steps:
+      - uses: actions/checkout@v7
+
+      # Dockerfile の rust:1.97-alpine と揃える。Renovate が Dockerfile を上げたらここも追随させる
+      - uses: dtolnay/rust-toolchain@1.97
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: web/status-page/server
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
   build:
     # arm64 ネイティブランナー（public リポは無料）。QEMU 不要
     runs-on: ubuntu-24.04-arm
@@ -40,7 +89,9 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    needs: build
+    # 品質チェックを通らなければ Pi へ配信しない。build（ghcr への push）は
+    # フィードバックを速くするため check と並列に走らせる
+    needs: [build, check-frontend, check-server]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
