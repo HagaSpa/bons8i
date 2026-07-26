@@ -11,6 +11,23 @@ env:
   IMAGE: ghcr.io/hagaspa/bons8i/status-page
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'web/status-page/**'
+
   check-frontend:
     runs-on: ubuntu-24.04-arm
     permissions:
@@ -87,8 +104,8 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    needs: [build, check-frontend, check-server]
-    if: github.event_name == 'push'
+    needs: [changes, build, check-frontend, check-server]
+    if: github.event_name == 'push' && needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
