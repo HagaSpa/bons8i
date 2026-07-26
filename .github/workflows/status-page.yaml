@@ -76,6 +76,8 @@ jobs:
       - run: cargo test
 
   build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     # arm64 ネイティブランナー（public リポは無料）。QEMU 不要
     runs-on: ubuntu-24.04-arm
     permissions:
