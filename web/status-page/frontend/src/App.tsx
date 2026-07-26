@@ -163,8 +163,10 @@ function StatusPage({ status }: { status: StatusResponse | null }) {
         <h2>Alert history</h2>
         <p className="section-note">
           Every firing alert is filed as a{" "}
-          <a href={`${REPO_URL}/issues?q=is%3Aissue`}>GitHub Issue</a> and auto-closed when it
-          resolves — an open issue means an incident is ongoing.
+          <a href={`${REPO_URL}/issues?q=is%3Aissue%20label%3Aalert%20OR%20label%3Aoutage`}>
+            GitHub Issue
+          </a>{" "}
+          and auto-closed when it resolves — an open issue means an incident is ongoing.
         </p>
         <div className="grid">
           <Card label="Open issues" value={issues ? String(issues.openCount) : "–"} />
