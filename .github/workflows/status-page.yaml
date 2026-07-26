@@ -56,6 +56,12 @@ jobs:
         with:
           workspaces: web/status-page/server
 
+      # rust-embed が ../frontend/dist/ をコンパイル時に読む（src/main.rs:20 の注記）。
+      # lint / test に中身は不要なので空ディレクトリで足りる。実物を埋め込んだ
+      # 検証は build ジョブ（Dockerfile が frontend ステージから dist を COPY）が担う
+      - name: Create empty frontend/dist for rust-embed
+        run: mkdir -p ../frontend/dist
+
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
