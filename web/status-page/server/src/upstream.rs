@@ -116,8 +116,6 @@ pub struct GhIssue {
     closed_at: Option<DateTime<Utc>>,
     #[serde(default)]
     labels: Vec<GhLabel>,
-    // PR も issues エンドポイントに混ざって返る。このキーの有無で除外する
-    pull_request: Option<serde_json::Value>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -151,10 +149,7 @@ pub async fn fetch_issues(
         .error_for_status()?
         .json()
         .await?;
-    Ok(issues
-        .into_iter()
-        .filter(|i| i.pull_request.is_none())
-        .collect())
+    Ok(issues)
 }
 
 pub fn issue_stats(issues: &[GhIssue]) -> IssueStats {
@@ -258,7 +253,6 @@ mod tests {
                 .iter()
                 .map(|n| GhLabel { name: (*n).into() })
                 .collect(),
-            pull_request: None,
         }
     }
 
