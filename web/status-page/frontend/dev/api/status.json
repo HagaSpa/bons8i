@@ -13,5 +13,10 @@
     "closedCount30d": 11,
     "avgHoursToClose30d": 0.4497222222222222
   },
+  "deployPrs": {
+    "deployedCount30d": 10,
+    "lastDeployedAt": "2026-07-24T10:34:06.794919875+00:00",
+    "lastDeployedSha": "5843221"
+  },
   "generatedAt": "2026-07-25T00:34:06.794919875+00:00"
 }

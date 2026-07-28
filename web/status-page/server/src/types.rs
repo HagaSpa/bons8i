@@ -9,6 +9,7 @@ pub struct StatusResponse {
     pub firing_alerts: Vec<FiringAlert>,
     pub metrics: MetricCards,
     pub issues: Option<IssueStats>,
+    pub deploy_prs: Option<DeployPrStats>,
     pub generated_at: String,
 }
 
@@ -72,4 +73,13 @@ pub struct IssueStats {
     pub open_count: u32,
     pub closed_count_30d: u32,
     pub avg_hours_to_close_30d: Option<f64>,
+}
+
+#[derive(Clone, Serialize, TS)]
+#[ts(export, export_to = "../../frontend/src/generated/")]
+#[serde(rename_all = "camelCase")]
+pub struct DeployPrStats {
+    pub deployed_count_30d: u32,
+    pub last_deployed_at: String,
+    pub last_deployed_sha: String,
 }

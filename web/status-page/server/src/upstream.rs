@@ -1,7 +1,7 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 
-use crate::types::{FiringAlert, IssueStats, MetricCards, OutageWindow};
+use crate::types::{DeployPrStats, FiringAlert, IssueStats, MetricCards, OutageWindow};
 
 // クエリはコードに固定。ユーザー入力は上流に一切届かない
 const Q_NODE_TEMP: &str = "max(node_thermal_zone_temp{type=\"cpu-thermal\"})";
@@ -179,6 +179,52 @@ pub fn issue_stats(issues: &[GhIssue]) -> IssueStats {
     }
 }
 
+#[derive(Clone, Deserialize)]
+pub struct GhDeployPr {
+    pub title: String,
+    pub closed_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+struct SearchResponse {
+    items: Vec<GhDeployPr>,
+}
+
+pub async fn fetch_deploy_prs(client: &reqwest::Client) -> Result<Vec<GhDeployPr>, reqwest::Error> {
+    let body: SearchResponse = client
+        .get("https://api.github.com/search/issues")
+        .header("User-Agent", "bons8i-status-page")
+        .header("Accept", "application/vnd.github+json")
+        .query(&[
+            ("q", "repo:HagaSpa/bons8i is:pr label:deploy is:merged"),
+            ("sort", "created"),
+            ("order", "desc"),
+            ("per_page", "100"),
+        ])
+        .send()
+        .await?
+        .error_for_status()?
+        .json()
+        .await?;
+
+    Ok(body.items)
+}
+
+pub fn deploy_pr_stats(prs: &[GhDeployPr]) -> Option<DeployPrStats> {
+    let cutoff = Utc::now() - Duration::days(30);
+    let last = prs.iter().max_by_key(|pr| pr.closed_at)?;
+
+    Some(DeployPrStats {
+        deployed_count_30d: prs.iter().filter(|pr| pr.closed_at > cutoff).count() as u32,
+        last_deployed_at: last.closed_at.to_rfc3339(),
+        last_deployed_sha: last
+            .title
+            .split_whitespace()
+            .next_back()
+            .unwrap_or_default()
+            .to_string(),
+    })
+}
 /// outage ラベル付き Issue だけが「訪問者視点の停止」の記録（ラベル 2 層化）。
 /// 運用アラート（alert のみ）はサービスとしては生きているので窓にしない。
 pub fn outage_windows(issues: &[GhIssue]) -> Vec<OutageWindow> {
@@ -262,5 +308,58 @@ mod tests {
         assert_eq!(stats.open_count, 1);
         assert_eq!(stats.closed_count_30d, 1);
         assert!((stats.avg_hours_to_close_30d.unwrap() - 1.0).abs() < 0.1);
+    }
+
+    fn pr(title: &str, closed_at: DateTime<Utc>) -> GhDeployPr {
+        GhDeployPr {
+            title: title.to_string(),
+            closed_at,
+        }
+    }
+
+    #[test]
+    fn pr_stats_counts_only_recent_but_reports_latest_deploy() {
+        let now = Utc::now();
+        let prs = vec![
+            pr(
+                "chore(status-page): deploy 1085be6",
+                now - Duration::days(40),
+            ),
+            pr(
+                "chore(status-page): deploy 0ed1169",
+                now - Duration::days(90),
+            ),
+        ];
+        let stats = deploy_pr_stats(&prs).unwrap();
+        // 30 日窓には 1 件も無いが、最終デプロイは窓外から報告される
+        assert_eq!(stats.deployed_count_30d, 0);
+        assert_eq!(stats.last_deployed_sha, "1085be6");
+    }
+
+    #[test]
+    fn pr_stats_counts_recent_deploys() {
+        let now = Utc::now();
+        let prs = vec![
+            pr(
+                "chore(status-page): deploy 1085be6",
+                now - Duration::hours(5),
+            ),
+            pr(
+                "chore(status-page): deploy 0ed1169",
+                now - Duration::hours(1),
+            ),
+            pr(
+                "chore(status-page): deploy 362cb44",
+                now - Duration::days(90),
+            ),
+        ];
+        let stats = deploy_pr_stats(&prs).unwrap();
+        assert_eq!(stats.deployed_count_30d, 2);
+        assert_eq!(stats.last_deployed_sha, "0ed1169");
+    }
+
+    #[test]
+    fn pr_stats_is_none_without_any_deploy() {
+        assert!(deploy_pr_stats(&[]).is_none());
     }
 }
