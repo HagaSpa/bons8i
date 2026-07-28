@@ -84,6 +84,7 @@ const fmt = {
     return v < 1 ? `${Math.round(v * 60)} min` : `${v.toFixed(1)} h`;
   },
   time: (iso: string) => new Date(iso).toLocaleTimeString(),
+  date: (iso: string) => new Date(iso).toLocaleDateString("sv-SE"),
 };
 
 function Card({
@@ -122,6 +123,7 @@ function AlertRow({ alert }: { alert: FiringAlert }) {
 function StatusPage({ status }: { status: StatusResponse | null }) {
   const m = status?.metrics;
   const issues = status?.issues ?? null;
+  const deployPrs = status?.deployPrs ?? null;
   const cpuTempClass =
     m?.nodeTempCelsius != null
       ? m.nodeTempCelsius > CPU_TEMP_ALERT
@@ -156,6 +158,16 @@ function StatusPage({ status }: { status: StatusResponse | null }) {
           <Card label="Memory usage" value={fmt.num(m?.memoryUsagePercent ?? null, 1, " %")} />
           <Card label="Uptime" value={fmt.uptime(m?.uptimeSeconds ?? null)} />
           <Card label="Running pods" value={fmt.num(m?.runningPods ?? null, 0, "")} />
+          <Card
+            label="Deployed count"
+            value={fmt.num(deployPrs?.deployedCount30d ?? null, 0, "")}
+            hint="last 30 days"
+          />
+          <Card
+            label="Deployed date"
+            value={deployPrs ? fmt.date(deployPrs.lastDeployedAt) : "–"}
+          />
+          <Card label="Deployed hash" value={deployPrs?.lastDeployedSha ?? "–"} />
         </div>
       </section>
 

@@ -37,9 +37,8 @@ struct AppState {
     am_url: String,
     github_repo: String,
     cluster_cache: Cache<(Option<Vec<FiringAlert>>, MetricCards)>,
-    // 生の Issue リストを持ち、統計（/api/status）と outage 窓（/api/uptime）を
-    // 同じレスポンスから導出する = GitHub へのリクエストは 1 本のまま
     issue_cache: Cache<Vec<upstream::GhIssue>>,
+    deploy_pr_cache: Cache<Vec<upstream::GhDeployPr>>,
 }
 
 fn env_or(key: &str, default: &str) -> String {
@@ -74,6 +73,7 @@ async fn main() {
         github_repo: env_or("GITHUB_REPO", "HagaSpa/bons8i"),
         cluster_cache: Cache::new(CLUSTER_TTL),
         issue_cache: Cache::new(GITHUB_TTL),
+        deploy_pr_cache: Cache::new(GITHUB_TTL),
     });
 
     let app = Router::new()
@@ -162,9 +162,9 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         })
         .await;
 
-    let issues = cached_issues(&state)
-        .await
-        .map(|list| upstream::issue_stats(&list));
+    let (issues, prs) = tokio::join!(cached_issues(&state), cached_deploy_prs(&state));
+    let issues = issues.map(|list| upstream::issue_stats(&list));
+    let prs = prs.and_then(|list| upstream::deploy_pr_stats(&list));
 
     let (alerts, metrics) = cluster.unwrap_or((None, MetricCards::default()));
     let (overall, firing_alerts) = match alerts {
@@ -178,6 +178,7 @@ async fn api_status(State(state): State<Arc<AppState>>) -> Json<StatusResponse> 
         firing_alerts,
         metrics,
         issues,
+        deploy_prs: prs,
         generated_at: chrono::Utc::now().to_rfc3339(),
     })
 }
@@ -200,7 +201,19 @@ async fn cached_issues(state: &AppState) -> Option<Vec<upstream::GhIssue>> {
         .get_or_refresh(|| async {
             upstream::fetch_issues(&state.client, &state.github_repo)
                 .await
-                .map_err(|e| tracing::warn!(error = %e, "github fetch failed"))
+                .map_err(|e| tracing::warn!(error = %e, "github issue fetch failed"))
+                .ok()
+        })
+        .await
+}
+
+async fn cached_deploy_prs(state: &AppState) -> Option<Vec<upstream::GhDeployPr>> {
+    state
+        .deploy_pr_cache
+        .get_or_refresh(|| async {
+            upstream::fetch_deploy_prs(&state.client)
+                .await
+                .map_err(|e| tracing::warn!(error = %e, "github pr fetch failed"))
                 .ok()
         })
         .await
