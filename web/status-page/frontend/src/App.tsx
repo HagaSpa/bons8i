@@ -70,6 +70,9 @@ const BADGE: Record<BadgeKind, { label: string; className: string }> = {
   unreachable: { label: "Status API Unreachable", className: "dim" },
 };
 
+// numeric: "auto" が 0 / 1 日を "today" / "yesterday" に置き換える
+const RELATIVE_DAYS = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
 const fmt = {
   num: (v: number | null, digits: number, unit: string) =>
     v == null ? "–" : `${v.toFixed(digits)}${unit}`,
@@ -85,6 +88,12 @@ const fmt = {
   },
   time: (iso: string) => new Date(iso).toLocaleTimeString(),
   date: (iso: string) => new Date(iso).toLocaleDateString("sv-SE"),
+  ago(iso: string) {
+    const days = Math.round(
+      (new Date(iso).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86_400_000,
+    );
+    return RELATIVE_DAYS.format(days, "day");
+  },
 };
 
 function Card({
@@ -158,16 +167,26 @@ function StatusPage({ status }: { status: StatusResponse | null }) {
           <Card label="Memory usage" value={fmt.num(m?.memoryUsagePercent ?? null, 1, " %")} />
           <Card label="Uptime" value={fmt.uptime(m?.uptimeSeconds ?? null)} />
           <Card label="Running pods" value={fmt.num(m?.runningPods ?? null, 0, "")} />
+        </div>
+      </section>
+
+      <section>
+        <h2>Deploy</h2>
+        <div className="grid">
           <Card
-            label="Deployed count"
+            label="Deploys"
             value={fmt.num(deployPrs?.deployedCount30d ?? null, 0, "")}
             hint="last 30 days"
           />
           <Card
-            label="Deployed date"
+            label="Last deploy"
             value={deployPrs ? fmt.date(deployPrs.lastDeployedAt) : "–"}
+            hint={
+              deployPrs
+                ? `${fmt.ago(deployPrs.lastDeployedAt)} · ${deployPrs.lastDeployedSha}`
+                : undefined
+            }
           />
-          <Card label="Deployed hash" value={deployPrs?.lastDeployedSha ?? "–"} />
         </div>
       </section>
 
