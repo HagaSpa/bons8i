@@ -7,8 +7,12 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::extract::State;
-use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::http::header::{
+    CACHE_CONTROL, CONTENT_SECURITY_POLICY, CONTENT_TYPE, HeaderValue, REFERRER_POLICY,
+    X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
+};
 use axum::http::{StatusCode, Uri};
+use axum::middleware::map_response;
 use axum::response::{IntoResponse, Json, Response};
 use axum::routing::get;
 use rust_embed::RustEmbed;
@@ -79,6 +83,7 @@ async fn main() {
         .route("/api/status", get(api_status))
         .route("/api/uptime", get(api_uptime))
         .fallback(static_handler)
+        .layer(map_response(add_security_header))
         .with_state(state.clone());
 
     let addr = env_or("LISTEN_ADDR", "0.0.0.0:8080");
@@ -112,6 +117,22 @@ async fn shutdown_signal() {
             tracing::info!("SIGTERM received, starting graceful shutdown")
         },
     }
+}
+
+async fn add_security_header(mut res: Response) -> Response {
+    res.headers_mut().insert(
+        CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("default-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"),
+    );
+    res.headers_mut()
+        .insert(X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    res.headers_mut()
+        .insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
+    res.headers_mut().insert(
+        REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    res
 }
 
 /// 同梱した React 成果物の配信。Vite の assets/ はファイル名にハッシュが入るので
