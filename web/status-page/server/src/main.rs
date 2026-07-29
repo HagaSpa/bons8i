@@ -35,7 +35,6 @@ struct AppState {
     client: reqwest::Client,
     vm_url: String,
     am_url: String,
-    github_repo: String,
     cluster_cache: Cache<(Option<Vec<FiringAlert>>, MetricCards)>,
     issue_cache: Cache<Vec<upstream::GhIssue>>,
     deploy_pr_cache: Cache<Vec<upstream::GhDeployPr>>,
@@ -70,7 +69,6 @@ async fn main() {
         // デフォルトはローカル開発用（kubectl port-forward 前提）。本番は env で Service 名を注入
         vm_url: env_or("VM_URL", "http://127.0.0.1:8428"),
         am_url: env_or("ALERTMANAGER_URL", "http://127.0.0.1:9093"),
-        github_repo: env_or("GITHUB_REPO", "HagaSpa/bons8i"),
         cluster_cache: Cache::new(CLUSTER_TTL),
         issue_cache: Cache::new(GITHUB_TTL),
         deploy_pr_cache: Cache::new(GITHUB_TTL),
@@ -199,7 +197,7 @@ async fn cached_issues(state: &AppState) -> Option<Vec<upstream::GhIssue>> {
     state
         .issue_cache
         .get_or_refresh(|| async {
-            upstream::fetch_issues(&state.client, &state.github_repo)
+            upstream::fetch_issues(&state.client)
                 .await
                 .map_err(|e| tracing::warn!(error = %e, "github issue fetch failed"))
                 .ok()

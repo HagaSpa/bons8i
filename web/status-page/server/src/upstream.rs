@@ -11,6 +11,8 @@ const Q_MEM_PERCENT: &str =
 const Q_UPTIME_SECONDS: &str = "time() - max(node_boot_time_seconds)";
 const Q_RUNNING_PODS: &str = r#"sum(kube_pod_status_phase{phase="Running"})"#;
 
+const SEARCH_URL: &str = "https://api.github.com/search/issues";
+
 #[derive(Deserialize)]
 struct PromResponse {
     data: PromData,
@@ -123,32 +125,43 @@ struct GhLabel {
     name: String,
 }
 
-/// alert ラベル付き Issue の一覧。Issue 統計と uptime calendar の両方が
-/// この 1 レスポンスから導出される（キャッシュも共有 = GitHub へのリクエストは増えない）。
-/// 無認証（public データのみ）。60 req/h per IP の制限は呼び出し元のキャッシュで吸収する。
-pub async fn fetch_issues(
-    client: &reqwest::Client,
-    repo: &str,
-) -> Result<Vec<GhIssue>, reqwest::Error> {
-    let url = format!("https://api.github.com/repos/{repo}/issues");
-    let issues: Vec<GhIssue> = client
-        .get(&url)
-        .header("User-Agent", "bons8i-status-page")
-        .header("Accept", "application/vnd.github+json")
-        .query(&[
-            ("state", "all"),
-            // ATG が付与する alert ラベルで絞る。Renovate の Dependency Dashboard 等の
-            // アラート以外の Issue を統計から除外する
-            ("labels", "alert"),
-            ("per_page", "100"),
-            ("sort", "created"),
-            ("direction", "desc"),
-        ])
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
+#[derive(Deserialize)]
+struct SearchResponseGhIssue {
+    items: Vec<GhIssue>,
+}
+
+/// 無認証（public データのみ）。10 req/m per IP の制限がある
+pub async fn fetch_issues(client: &reqwest::Client) -> Result<Vec<GhIssue>, reqwest::Error> {
+    let mut issues: Vec<GhIssue> = Vec::new();
+    let mut page = 1;
+
+    loop {
+        let response: SearchResponseGhIssue = client
+            .get(SEARCH_URL)
+            .header("User-Agent", "bons8i-status-page")
+            .header("Accept", "application/vnd.github+json")
+            .query(&[
+                // ATG が付与する alert ラベルで絞る。Renovate の Dependency Dashboard 等の
+                // アラート以外の Issue を統計から除外する
+                ("q", "repo:HagaSpa/bons8i is:issue label:alert"),
+                ("sort", "created"),
+                ("per_page", "100"),
+                ("page", &page.to_string()),
+            ])
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+
+        if response.items.is_empty() {
+            break;
+        }
+
+        issues.extend(response.items);
+        page += 1;
+    }
+
     Ok(issues)
 }
 
@@ -181,12 +194,12 @@ pub struct GhDeployPr {
 }
 
 #[derive(Deserialize)]
-struct SearchResponse {
+struct SearchResponseGhDeployPr {
     items: Vec<GhDeployPr>,
 }
 
 pub async fn fetch_deploy_prs(client: &reqwest::Client) -> Result<Vec<GhDeployPr>, reqwest::Error> {
-    let body: SearchResponse = client
+    let body: SearchResponseGhDeployPr = client
         .get("https://api.github.com/search/issues")
         .header("User-Agent", "bons8i-status-page")
         .header("Accept", "application/vnd.github+json")
