@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, Months, Utc};
 use serde::Deserialize;
 
 use crate::types::{DeployPrStats, FiringAlert, IssueStats, MetricCards, OutageWindow};
@@ -125,26 +125,39 @@ struct GhLabel {
     name: String,
 }
 
-#[derive(Deserialize)]
-struct SearchResponseGhIssue {
-    items: Vec<GhIssue>,
+#[derive(Clone, Deserialize)]
+pub struct GhDeployPr {
+    pub title: String,
+    pub closed_at: DateTime<Utc>,
 }
 
-/// 無認証（public データのみ）。10 req/m per IP の制限がある
+#[derive(Deserialize)]
+struct SearchResponse<T> {
+    items: Vec<T>,
+    total_count: u32,
+}
+
+/// 直近3ヶ月前の issue から最新のものまでを取得する。10 req/m per IP の制限がある
 pub async fn fetch_issues(client: &reqwest::Client) -> Result<Vec<GhIssue>, reqwest::Error> {
     let mut issues: Vec<GhIssue> = Vec::new();
     let mut page = 1;
+    let first_day_of_3month_ago = (Utc::now() - Months::new(3)).format("%Y-%m-01").to_string();
 
     loop {
-        let response: SearchResponseGhIssue = client
+        let response: SearchResponse<GhIssue> = client
             .get(SEARCH_URL)
             .header("User-Agent", "bons8i-status-page")
             .header("Accept", "application/vnd.github+json")
             .query(&[
-                // ATG が付与する alert ラベルで絞る。Renovate の Dependency Dashboard 等の
-                // アラート以外の Issue を統計から除外する
-                ("q", "repo:HagaSpa/bons8i is:issue label:alert"),
-                ("sort", "created"),
+                // AlertManagerToGithub が付与する alert ラベルで絞る
+                (
+                    "q",
+                    format!(
+                        "repo:HagaSpa/bons8i is:issue label:alert created:>={}",
+                        first_day_of_3month_ago
+                    )
+                    .as_str(),
+                ),
                 ("per_page", "100"),
                 ("page", &page.to_string()),
             ])
@@ -157,8 +170,11 @@ pub async fn fetch_issues(client: &reqwest::Client) -> Result<Vec<GhIssue>, reqw
         if response.items.is_empty() {
             break;
         }
-
         issues.extend(response.items);
+
+        if response.total_count <= issues.len() as u32 {
+            break;
+        }
         page += 1;
     }
 
@@ -187,20 +203,9 @@ pub fn issue_stats(issues: &[GhIssue]) -> IssueStats {
     }
 }
 
-#[derive(Clone, Deserialize)]
-pub struct GhDeployPr {
-    pub title: String,
-    pub closed_at: DateTime<Utc>,
-}
-
-#[derive(Deserialize)]
-struct SearchResponseGhDeployPr {
-    items: Vec<GhDeployPr>,
-}
-
 pub async fn fetch_deploy_prs(client: &reqwest::Client) -> Result<Vec<GhDeployPr>, reqwest::Error> {
-    let body: SearchResponseGhDeployPr = client
-        .get("https://api.github.com/search/issues")
+    let response: SearchResponse<GhDeployPr> = client
+        .get(SEARCH_URL)
         .header("User-Agent", "bons8i-status-page")
         .header("Accept", "application/vnd.github+json")
         .query(&[
@@ -215,7 +220,7 @@ pub async fn fetch_deploy_prs(client: &reqwest::Client) -> Result<Vec<GhDeployPr
         .json()
         .await?;
 
-    Ok(body.items)
+    Ok(response.items)
 }
 
 pub fn deploy_pr_stats(prs: &[GhDeployPr]) -> Option<DeployPrStats> {
