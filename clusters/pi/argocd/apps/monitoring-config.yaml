@@ -3,6 +3,9 @@ kind: Application
 metadata:
   name: monitoring-config
   namespace: argocd
+  annotations:
+    # 外すと CRD の defaulting（VMRule の record、ExternalSecret の creationPolicy 等）で常時 OutOfSync になる
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: default
   source:
