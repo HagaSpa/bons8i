@@ -9,6 +9,7 @@ use axum::Router;
 use axum::extract::State;
 use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::http::{StatusCode, Uri};
+use axum::middleware::map_response;
 use axum::response::{IntoResponse, Json, Response};
 use axum::routing::get;
 use rust_embed::RustEmbed;
@@ -78,6 +79,7 @@ async fn main() {
         .route("/healthz", get(|| async { "ok" }))
         .route("/api/status", get(api_status))
         .route("/api/uptime", get(api_uptime))
+        .layer(map_response(add_custom_handler))
         .fallback(static_handler)
         .with_state(state.clone());
 
@@ -112,6 +114,26 @@ async fn shutdown_signal() {
             tracing::info!("SIGTERM received, starting graceful shutdown")
         },
     }
+}
+
+async fn add_custom_handler(mut res: Response) -> Response {
+    res.headers_mut().insert(
+        axum::http::header::CONTENT_SECURITY_POLICY,
+        axum::http::header::HeaderValue::from_static("default-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+    );
+    res.headers_mut().insert(
+        axum::http::header::X_FRAME_OPTIONS,
+        axum::http::header::HeaderValue::from_static("DENY"),
+    );
+    res.headers_mut().insert(
+        axum::http::header::X_CONTENT_TYPE_OPTIONS,
+        axum::http::header::HeaderValue::from_static("nosniff"),
+    );
+    res.headers_mut().insert(
+        axum::http::header::REFERRER_POLICY,
+        axum::http::header::HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    res
 }
 
 /// 同梱した React 成果物の配信。Vite の assets/ はファイル名にハッシュが入るので
