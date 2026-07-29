@@ -49,7 +49,7 @@ GitHub Issues.
 | **vmbackup / vm-archive CronJobs** | Daily S3 mirror of the TSDB + monthly append-only archive that outlives retention | ArgoCD git source Application (`monitoring/`) | Native GitOps |
 | **alertmanager-to-github** ([pfnet-research](https://github.com/pfnet-research/alertmanager-to-github)) | Turns firing Alertmanager alerts into GitHub Issues with an open/close/reopen lifecycle | ArgoCD git source Application (custom Deployment/Service manifests) | Native GitOps |
 | **cloudflared** | Cloudflare Tunnel connector — publishes Grafana and status-page with zero inbound ports; TLS terminates at the Cloudflare edge | ArgoCD git source Application | Native GitOps |
-| **status-page** | Public status site (Rust BFF + React SPA, single scratch image); image built on arm64 by GitHub Actions, deployed via an auto-merged image-bump PR | ArgoCD git source Application (**auto-sync**: prune + selfHeal) | Native GitOps |
+| **status-page** | Public status site (Rust BFF + React SPA, single scratch image); image built on arm64 by GitHub Actions, deployed via an auto-merged image-bump PR | ArgoCD git source Application (the only App with **selfHeal** on) | Native GitOps |
 | **Tailscale** | Remote ssh / kubectl access for day-to-day operations | Installed on the host, outside the cluster | N/A |
 | **External probe** (AWS Lambda) | Synthetic monitoring of `bons8i.hagaspa.com` every 10 min from outside the cluster; files GitHub Issues on outage | Terraform (`infra/aws/`), outside the cluster | N/A (cluster-external) |
 
@@ -79,7 +79,13 @@ GitHub Issues.
 - **Change control**: the `main` branch is protected on GitHub (no direct
   pushes), and a local pre-commit hook additionally blocks committing
   directly to `main`/`master` on this machine. All changes land through a
-  PR.
+  PR. Every Application is auto-synced with `prune`, so merging a PR is what
+  applies it to the cluster — a merge is the deploy. `selfHeal` is
+  deliberately left off (`status-page` excepted) to keep `kubectl edit`
+  usable for experimentation. Operational caveats — notably that
+  `root-app.yaml` is not managed by ArgoCD itself and needs a manual
+  `kubectl apply` — are in
+  [`docs/runbook/argocd-sync.md`](../../docs/runbook/argocd-sync.md).
 - **Manifest convention**: when upstream ships a Helm chart, it's adopted as
   an ArgoCD Helm source Application with values inlined. When upstream ships
   plain YAML and publishes a `kustomization.yaml`, it's adopted via a

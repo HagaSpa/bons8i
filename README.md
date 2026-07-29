@@ -66,4 +66,7 @@ Merging a change under `web/status-page/` deploys it without manual steps:
 3. Argo CD auto-syncs the application (`prune` + `selfHeal`); rollback is a
    `git revert` of the deploy commit.
 
-Platform applications are synced manually after reviewing the diff.
+Platform applications are auto-synced as well (`prune`, but no `selfHeal` so
+that `kubectl edit` stays usable for experimentation) — merging a PR is what
+applies it. See the [Argo CD sync runbook](docs/runbook/argocd-sync.md)
+(Japanese) for the operational caveats.
