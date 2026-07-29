@@ -39,5 +39,9 @@ spec:
       jsonPointers:
         - /data
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: false
     syncOptions:
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
