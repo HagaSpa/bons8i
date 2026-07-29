@@ -22,8 +22,6 @@ spec:
               value: http://vmsingle-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:8428
             - name: ALERTMANAGER_URL
               value: http://vmalertmanager-vmks-victoria-metrics-k8s-stack.monitoring.svc.cluster.local:9093
-            - name: GITHUB_REPO
-              value: HagaSpa/bons8i
           ports:
             - name: http
               containerPort: 8080

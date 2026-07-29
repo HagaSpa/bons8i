@@ -1,4 +1,4 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, Months, Utc};
 use serde::Deserialize;
 
 use crate::types::{DeployPrStats, FiringAlert, IssueStats, MetricCards, OutageWindow};
@@ -10,6 +10,8 @@ const Q_MEM_PERCENT: &str =
     "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)";
 const Q_UPTIME_SECONDS: &str = "time() - max(node_boot_time_seconds)";
 const Q_RUNNING_PODS: &str = r#"sum(kube_pod_status_phase{phase="Running"})"#;
+
+const SEARCH_URL: &str = "https://api.github.com/search/issues";
 
 #[derive(Deserialize)]
 struct PromResponse {
@@ -123,32 +125,59 @@ struct GhLabel {
     name: String,
 }
 
-/// alert ラベル付き Issue の一覧。Issue 統計と uptime calendar の両方が
-/// この 1 レスポンスから導出される（キャッシュも共有 = GitHub へのリクエストは増えない）。
-/// 無認証（public データのみ）。60 req/h per IP の制限は呼び出し元のキャッシュで吸収する。
-pub async fn fetch_issues(
-    client: &reqwest::Client,
-    repo: &str,
-) -> Result<Vec<GhIssue>, reqwest::Error> {
-    let url = format!("https://api.github.com/repos/{repo}/issues");
-    let issues: Vec<GhIssue> = client
-        .get(&url)
-        .header("User-Agent", "bons8i-status-page")
-        .header("Accept", "application/vnd.github+json")
-        .query(&[
-            ("state", "all"),
-            // ATG が付与する alert ラベルで絞る。Renovate の Dependency Dashboard 等の
-            // アラート以外の Issue を統計から除外する
-            ("labels", "alert"),
-            ("per_page", "100"),
-            ("sort", "created"),
-            ("direction", "desc"),
-        ])
-        .send()
-        .await?
-        .error_for_status()?
-        .json()
-        .await?;
+#[derive(Clone, Deserialize)]
+pub struct GhDeployPr {
+    pub title: String,
+    pub closed_at: DateTime<Utc>,
+}
+
+#[derive(Deserialize)]
+struct SearchResponse<T> {
+    items: Vec<T>,
+    total_count: u32,
+}
+
+/// 直近3ヶ月前の issue から最新のものまでを取得する。10 req/m per IP の制限がある
+pub async fn fetch_issues(client: &reqwest::Client) -> Result<Vec<GhIssue>, reqwest::Error> {
+    let mut issues: Vec<GhIssue> = Vec::new();
+    let mut page = 1;
+    let first_day_of_3month_ago = (Utc::now() - Months::new(3)).format("%Y-%m-01").to_string();
+
+    loop {
+        let response: SearchResponse<GhIssue> = client
+            .get(SEARCH_URL)
+            .header("User-Agent", "bons8i-status-page")
+            .header("Accept", "application/vnd.github+json")
+            .query(&[
+                // AlertManagerToGithub が付与する alert ラベルで絞る
+                (
+                    "q",
+                    format!(
+                        "repo:HagaSpa/bons8i is:issue label:alert created:>={}",
+                        first_day_of_3month_ago
+                    )
+                    .as_str(),
+                ),
+                ("per_page", "100"),
+                ("page", &page.to_string()),
+            ])
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
+
+        if response.items.is_empty() {
+            break;
+        }
+        issues.extend(response.items);
+
+        if response.total_count <= issues.len() as u32 {
+            break;
+        }
+        page += 1;
+    }
+
     Ok(issues)
 }
 
@@ -174,20 +203,9 @@ pub fn issue_stats(issues: &[GhIssue]) -> IssueStats {
     }
 }
 
-#[derive(Clone, Deserialize)]
-pub struct GhDeployPr {
-    pub title: String,
-    pub closed_at: DateTime<Utc>,
-}
-
-#[derive(Deserialize)]
-struct SearchResponse {
-    items: Vec<GhDeployPr>,
-}
-
 pub async fn fetch_deploy_prs(client: &reqwest::Client) -> Result<Vec<GhDeployPr>, reqwest::Error> {
-    let body: SearchResponse = client
-        .get("https://api.github.com/search/issues")
+    let response: SearchResponse<GhDeployPr> = client
+        .get(SEARCH_URL)
         .header("User-Agent", "bons8i-status-page")
         .header("Accept", "application/vnd.github+json")
         .query(&[
@@ -202,7 +220,7 @@ pub async fn fetch_deploy_prs(client: &reqwest::Client) -> Result<Vec<GhDeployPr
         .json()
         .await?;
 
-    Ok(body.items)
+    Ok(response.items)
 }
 
 pub fn deploy_pr_stats(prs: &[GhDeployPr]) -> Option<DeployPrStats> {
