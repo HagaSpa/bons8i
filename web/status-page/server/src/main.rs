@@ -7,7 +7,10 @@ use std::time::Duration;
 
 use axum::Router;
 use axum::extract::State;
-use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
+use axum::http::header::{
+    CACHE_CONTROL, CONTENT_SECURITY_POLICY, CONTENT_TYPE, HeaderValue, REFERRER_POLICY,
+    X_CONTENT_TYPE_OPTIONS, X_FRAME_OPTIONS,
+};
 use axum::http::{StatusCode, Uri};
 use axum::middleware::map_response;
 use axum::response::{IntoResponse, Json, Response};
@@ -79,8 +82,8 @@ async fn main() {
         .route("/healthz", get(|| async { "ok" }))
         .route("/api/status", get(api_status))
         .route("/api/uptime", get(api_uptime))
-        .layer(map_response(add_custom_handler))
         .fallback(static_handler)
+        .layer(map_response(add_security_header))
         .with_state(state.clone());
 
     let addr = env_or("LISTEN_ADDR", "0.0.0.0:8080");
@@ -116,22 +119,18 @@ async fn shutdown_signal() {
     }
 }
 
-async fn add_custom_handler(mut res: Response) -> Response {
+async fn add_security_header(mut res: Response) -> Response {
     res.headers_mut().insert(
-        axum::http::header::CONTENT_SECURITY_POLICY,
-        axum::http::header::HeaderValue::from_static("default-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+        CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("default-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"),
     );
+    res.headers_mut()
+        .insert(X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    res.headers_mut()
+        .insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
     res.headers_mut().insert(
-        axum::http::header::X_FRAME_OPTIONS,
-        axum::http::header::HeaderValue::from_static("DENY"),
-    );
-    res.headers_mut().insert(
-        axum::http::header::X_CONTENT_TYPE_OPTIONS,
-        axum::http::header::HeaderValue::from_static("nosniff"),
-    );
-    res.headers_mut().insert(
-        axum::http::header::REFERRER_POLICY,
-        axum::http::header::HeaderValue::from_static("strict-origin-when-cross-origin"),
+        REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
     );
     res
 }
