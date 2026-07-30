@@ -17,6 +17,8 @@ K8s Secret（ワークロードが参照）
 
 > **注意（PAT の共用）**: SSM の GitHub PAT（`/bons8i/monitoring/alertmanager-to-github/github-token`）は、ESO 経由のクラスタ内 alertmanager-to-github に加えて**外形監視 Lambda（external probe、`infra/aws/`）も直接読んで共用している**。この PAT を失効させると両方が同時に止まる。ローテーションは SSM の値を更新すればよく、Lambda は毎回の実行時に SSM から読み直すため再デプロイ不要（クラスタ側は ExternalSecret の再同期を確認する）。
 
+> **注意（クラスタが使わない SSM パラメータ）**: `/bons8i/cloudflare/terraform/api-token` は Cloudflare Zero Trust Access を管理する Terraform（`infra/cloudflare/`）専用で、ESO もクラスタも参照しない。そのため下の復旧手順には登場しないが、失効させると `scripts/tf-cloudflare.sh plan` が通らなくなり **Access 設定の drift 検知が黙って止まる**（plan は人が走らせたときだけ動くので、止まっても誰も気づかない）。再発行するときは Cloudflare ダッシュボードで Account 権限の `Access: Apps and Policies`（Edit）と `Access: Organizations, Identity Providers, and Groups`（Read）を付ける。
+
 ## 復旧手順
 
 新クラスタの kubectl context で作業する。
