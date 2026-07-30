@@ -1,0 +1,9 @@
+tunnel: b8514e4f-a617-47e5-87d9-dafa1f420926
+credentials-file: /etc/cloudflared/creds/credentials.json
+protocol: http2
+ingress:
+  - hostname: grafana.hagaspa.com
+    service: http://vmks-grafana.monitoring.svc.cluster.local:80
+  - hostname: bons8i.hagaspa.com
+    service: http://status-page.status-page.svc.cluster.local:80
+  - service: http_status:404
