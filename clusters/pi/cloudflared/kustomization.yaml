@@ -3,7 +3,11 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret-credentials.yaml
-  - configmap.yaml
   - deployment.yaml
   - serviceaccount.yaml
   - networkpolicy.yaml
+configMapGenerator:
+  - name: cloudflared-config
+    namespace: cloudflared
+    files:
+      - config.yaml
