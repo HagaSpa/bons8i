@@ -168,53 +168,51 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   const percent = uptimePercent(data.windows, observedFrom, now);
 
   return (
-    <>
-      <section>
-        <h2>Uptime</h2>
-        <p className="section-note">
-          Daily availability of <strong>bons8i.hagaspa.com</strong> as seen by an external probe
-          (AWS Lambda, every 10 minutes). Outage windows are recorded as{" "}
-          <a href={`${repoUrl}/issues?q=label%3Aoutage`}>GitHub Issues</a> — open means an outage is
-          ongoing.
-        </p>
-        {percent != null && (
-          <div className="uptime-summary">
-            <span className="uptime-percent">{percent.toFixed(2)}%</span> uptime since{" "}
-            {observedFrom.toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </div>
-        )}
-        <div className="cal-row">
-          {months.map((first) => (
-            <MonthCalendar
-              key={localDayKey(first)}
-              first={first}
-              byDay={byDay}
-              since={since}
-              now={now}
-              onSelect={setSelected}
-            />
-          ))}
+    <section>
+      <h2>Uptime</h2>
+      <p className="section-note">
+        Daily availability of <strong>bons8i.hagaspa.com</strong> as seen by an external probe (AWS
+        Lambda, every 10 minutes). Outage windows are recorded as{" "}
+        <a href={`${repoUrl}/issues?q=label%3Aoutage`}>GitHub Issues</a> — open means an outage is
+        ongoing.
+      </p>
+      {percent != null && (
+        <div className="uptime-summary">
+          <span className="uptime-percent">{percent.toFixed(2)}%</span> uptime since{" "}
+          {observedFrom.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
         </div>
-        <DayDetail selected={selected} repoUrl={repoUrl} />
-        <div className="cal-legend">
-          <span>
-            <i className="cal-dot ok" /> operational
-          </span>
-          <span>
-            <i className="cal-dot partial" /> partial (&lt; 1 h)
-          </span>
-          <span>
-            <i className="cal-dot major" /> major (≥ 1 h)
-          </span>
-          <span>
-            <i className="cal-dot nodata" /> no data
-          </span>
-        </div>
-      </section>
-    </>
+      )}
+      <div className="cal-row">
+        {months.map((first) => (
+          <MonthCalendar
+            key={localDayKey(first)}
+            first={first}
+            byDay={byDay}
+            since={since}
+            now={now}
+            onSelect={setSelected}
+          />
+        ))}
+      </div>
+      <DayDetail selected={selected} repoUrl={repoUrl} />
+      <div className="cal-legend">
+        <span>
+          <i className="cal-dot ok" /> operational
+        </span>
+        <span>
+          <i className="cal-dot partial" /> partial (&lt; 1 h)
+        </span>
+        <span>
+          <i className="cal-dot major" /> major (≥ 1 h)
+        </span>
+        <span>
+          <i className="cal-dot nodata" /> no data
+        </span>
+      </div>
+    </section>
   );
 }
