@@ -53,17 +53,17 @@ export function downtimeByDay(windows: OutageWindow[], now: Date): Map<string, D
 }
 
 /**
- * [from, now] の観測期間に対する uptime %。
+ * [from, to] の観測期間に対する uptime %。
  * 観測期間の起点は「観測なし」の日を分母に入れないよう呼び出し側で
  * max(表示範囲の開始, since) にクランプして渡す。
  */
-export function uptimePercent(windows: OutageWindow[], from: Date, now: Date): number | null {
-  const total = now.getTime() - from.getTime();
+export function uptimePercent(windows: OutageWindow[], from: Date, to: Date): number | null {
+  const total = to.getTime() - from.getTime();
   if (total <= 0) return null;
   let down = 0;
   for (const w of windows) {
     const start = Math.max(new Date(w.startedAt).getTime(), from.getTime());
-    const end = Math.min((w.endedAt ? new Date(w.endedAt) : now).getTime(), now.getTime());
+    const end = Math.min((w.endedAt ? new Date(w.endedAt) : to).getTime(), to.getTime());
     if (end > start) down += end - start;
   }
   return 100 * (1 - down / total);
