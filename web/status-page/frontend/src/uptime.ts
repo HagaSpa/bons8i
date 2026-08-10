@@ -19,6 +19,10 @@ export function startOfLocalDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+export function startOfFirstDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
 /**
  * 窓をローカル TZ の日に割り付け、日ごとの downtime 秒数を積算する。
  * 日をまたぐ窓は日ごとに分割（例: 23:50〜00:10 は前日 10 分 + 当日 10 分）。

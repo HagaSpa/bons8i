@@ -4,6 +4,7 @@ import {
   dayState,
   downtimeByDay,
   localDayKey,
+  startOfFirstDay,
   startOfLocalDay,
   uptimePercent,
   type DayInfo,
@@ -165,6 +166,7 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   const since = new Date(data.since);
   // 「観測なし」の日を分母に入れない: 表示範囲の開始と since の遅い方から数える
   const observedFrom = new Date(Math.max(months[0].getTime(), startOfLocalDay(since).getTime()));
+  const observedFromFirstDay = startOfFirstDay(since);
   const percent = uptimePercent(data.windows, observedFrom, now);
 
   return (
@@ -187,16 +189,18 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
         </div>
       )}
       <div className="cal-row">
-        {months.map((first) => (
-          <MonthCalendar
-            key={localDayKey(first)}
-            first={first}
-            byDay={byDay}
-            since={since}
-            now={now}
-            onSelect={setSelected}
-          />
-        ))}
+        {months
+          .filter((first) => first >= observedFromFirstDay)
+          .map((first) => (
+            <MonthCalendar
+              key={localDayKey(first)}
+              first={first}
+              byDay={byDay}
+              since={since}
+              now={now}
+              onSelect={setSelected}
+            />
+          ))}
       </div>
       <DayDetail selected={selected} repoUrl={repoUrl} />
       <div className="cal-legend">
