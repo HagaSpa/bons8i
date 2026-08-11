@@ -170,8 +170,8 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   }
 
   const since = new Date(data.since);
-  // 「観測なし」の日を分母に入れない: 表示範囲の開始と since の遅い方から数える
-  const observedFrom = new Date(Math.max(months[0].getTime(), startOfLocalDay(since).getTime()));
+  // 「観測なし」の日を分母に入れない:  since 以降を全期間として扱う
+  const observedFrom = startOfLocalDay(since);
   const observedFromFirstDay = startOfFirstDay(since);
   const percent = uptimePercent(data.windows, observedFrom, now);
 
