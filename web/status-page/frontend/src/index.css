@@ -214,6 +214,45 @@ a {
   margin-right: 4px;
 }
 
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cal-nav-btn {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dim);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.cal-nav-btn:hover:not(:disabled) {
+  color: var(--text-h);
+  border-color: var(--dim);
+}
+
+.cal-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cal-nav-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  /* 月名の長さで両脇のボタンが動かないよう最長ケース分を確保する */
+  min-width: 16em;
+  text-align: center;
+}
+
 .cal-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

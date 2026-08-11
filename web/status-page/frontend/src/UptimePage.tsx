@@ -15,6 +15,16 @@ import {
 const MONTHS_SHOWN = 3;
 const WEEKDAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
 
+function monthLabel(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function rangeLabelOf(months: Date[]): string {
+  if (months.length === 0) return "";
+  if (months.length === 1) return monthLabel(months[0]);
+  return `${monthLabel(months[0])} to ${monthLabel(months[months.length - 1])}`;
+}
+
 const STATE_LABEL: Record<DayState, string> = {
   ok: "operational",
   partial: "partial outage (< 1 h)",
@@ -64,7 +74,7 @@ function MonthCalendar({
   percent: number | null;
   onSelect: (day: SelectedDay) => void;
 }) {
-  const monthName = first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const monthName = monthLabel(first);
   const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
   const cells: (Date | null)[] = [
     ...Array<null>(first.getDay()).fill(null),
@@ -152,13 +162,15 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   const [selected, setSelected] = useState<SelectedDay | null>(null);
   // マウント時点の「今」で固定（fetch も mount 時 1 回。レンダーごとに動かさない）
   const [now] = useState(() => new Date());
+  const [page, setPage] = useState(0);
 
   const months = useMemo(() => {
     return Array.from({ length: MONTHS_SHOWN }, (_, i) => {
       const offset = MONTHS_SHOWN - 1 - i; // 古い月が左
-      return new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      const pageOffset = page * MONTHS_SHOWN;
+      return new Date(now.getFullYear(), now.getMonth() - (offset + pageOffset), 1);
     });
-  }, [now]);
+  }, [now, page]);
 
   const byDay = useMemo(() => downtimeByDay(data?.windows ?? [], now), [data, now]);
 
@@ -170,10 +182,19 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   }
 
   const since = new Date(data.since);
-  // 「観測なし」の日を分母に入れない: 表示範囲の開始と since の遅い方から数える
-  const observedFrom = new Date(Math.max(months[0].getTime(), startOfLocalDay(since).getTime()));
+  // 「観測なし」の日を分母に入れない:  since 以降を全期間として扱う
+  const observedFrom = startOfLocalDay(since);
   const observedFromFirstDay = startOfFirstDay(since);
+  const visibleMonth = months.filter((month) => month >= observedFromFirstDay);
+  const isBackDisabled = months[0] <= observedFromFirstDay;
+  const isForwardDisabled = page === 0;
   const percent = uptimePercent(data.windows, observedFrom, now);
+  const rangeLabel = rangeLabelOf(visibleMonth);
+
+  const changePage = (delta: number) => {
+    setPage((p) => p + delta);
+    setSelected(null);
+  };
 
   return (
     <section>
@@ -194,20 +215,41 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
           })}
         </div>
       )}
+      {visibleMonth.length > 0 && (
+        <div className="cal-nav">
+          <button
+            type="button"
+            className="cal-nav-btn"
+            aria-label={`Previous ${MONTHS_SHOWN} months`}
+            disabled={isBackDisabled}
+            onClick={() => changePage(1)}
+          >
+            ←
+          </button>
+          <span className="cal-nav-label">{rangeLabel}</span>
+          <button
+            type="button"
+            className="cal-nav-btn"
+            aria-label={`Next ${MONTHS_SHOWN} months`}
+            disabled={isForwardDisabled}
+            onClick={() => changePage(-1)}
+          >
+            →
+          </button>
+        </div>
+      )}
       <div className="cal-row">
-        {months
-          .filter((first) => first >= observedFromFirstDay)
-          .map((first) => (
-            <MonthCalendar
-              key={localDayKey(first)}
-              first={first}
-              byDay={byDay}
-              since={since}
-              now={now}
-              percent={uptimePercentByMonth(data.windows, first, since, now)}
-              onSelect={setSelected}
-            />
-          ))}
+        {visibleMonth.map((first) => (
+          <MonthCalendar
+            key={localDayKey(first)}
+            first={first}
+            byDay={byDay}
+            since={since}
+            now={now}
+            percent={uptimePercentByMonth(data.windows, first, since, now)}
+            onSelect={setSelected}
+          />
+        ))}
       </div>
       <DayDetail selected={selected} repoUrl={repoUrl} />
       <div className="cal-legend">
