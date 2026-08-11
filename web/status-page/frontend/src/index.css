@@ -232,6 +232,8 @@ a {
   font-weight: 600;
   color: var(--text-h);
   margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
 }
 
 .cal-grid {
