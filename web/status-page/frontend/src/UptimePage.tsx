@@ -7,6 +7,7 @@ import {
   startOfFirstDay,
   startOfLocalDay,
   uptimePercent,
+  uptimePercentByMonth,
   type DayInfo,
   type DayState,
 } from "./uptime";
@@ -53,12 +54,14 @@ function MonthCalendar({
   byDay,
   since,
   now,
+  percent,
   onSelect,
 }: {
   first: Date; // 月初日（ローカル TZ）
   byDay: Map<string, DayInfo>;
   since: Date;
   now: Date;
+  percent: number | null;
   onSelect: (day: SelectedDay) => void;
 }) {
   const monthName = first.toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -73,7 +76,10 @@ function MonthCalendar({
 
   return (
     <div className="cal-month">
-      <div className="cal-title">{monthName}</div>
+      <div className="cal-title">
+        {monthName}
+        <span className="dim-text">{percent != null ? percent.toFixed(2) : "-"}% </span>
+      </div>
       <div className="cal-grid">
         {WEEKDAY_INITIALS.map((w, i) => (
           <div key={`w${i}`} className="cal-weekday">
@@ -198,6 +204,7 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
               byDay={byDay}
               since={since}
               now={now}
+              percent={uptimePercentByMonth(data.windows, first, since, now)}
               onSelect={setSelected}
             />
           ))}

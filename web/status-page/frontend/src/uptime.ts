@@ -69,6 +69,20 @@ export function uptimePercent(windows: OutageWindow[], from: Date, to: Date): nu
   return 100 * (1 - down / total);
 }
 
+/** 月毎のuptime % */
+export function uptimePercentByMonth(
+  windows: OutageWindow[],
+  first: Date, // 月初
+  since: Date,
+  now: Date,
+): number | null {
+  const firstOfNextMonth = new Date(first.getFullYear(), first.getMonth() + 1, 1);
+  const from = new Date(Math.max(first.getTime(), startOfLocalDay(since).getTime()));
+  const to = new Date(Math.min(firstOfNextMonth.getTime(), now.getTime()));
+  const uptime = uptimePercent(windows, from, to);
+  return uptime;
+}
+
 export type DayState = "ok" | "partial" | "major" | "nodata" | "future";
 
 const MAJOR_THRESHOLD_SECONDS = 3600;
