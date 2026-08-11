@@ -44,6 +44,8 @@ export default defineConfig({
           name: "logic",
           environment: "node",
           include: ["src/**/*.test.ts"],
+          // 日境界の判定がローカル TZ 依存なので固定する（CI は UTC で走る）
+          env: { TZ: "Asia/Tokyo" },
         },
       },
       {
