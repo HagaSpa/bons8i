@@ -65,7 +65,7 @@ function MonthCalendar({
   since,
   now,
   percent,
-  onSelect,
+  onHover,
   onPinned,
 }: {
   first: Date; // 月初日（ローカル TZ）
@@ -73,7 +73,7 @@ function MonthCalendar({
   since: Date;
   now: Date;
   percent: number | null;
-  onSelect: (day: SelectedDay | null) => void;
+  onHover: (day: SelectedDay | null) => void;
   onPinned: (day: SelectedDay) => void;
 }) {
   const monthName = monthLabel(first);
@@ -109,9 +109,9 @@ function MonthCalendar({
               className={`cal-day ${state}`}
               aria-label={`${localDayKey(day)}: ${STATE_LABEL[state] || "future"}`}
               disabled={state === "future"}
-              onMouseEnter={() => onSelect({ date: day, state, info })}
-              onMouseLeave={() => onSelect(null)}
-              onFocus={() => onSelect({ date: day, state, info })}
+              onMouseEnter={() => onHover({ date: day, state, info })}
+              onMouseLeave={() => onHover(null)}
+              onFocus={() => onHover({ date: day, state, info })}
               onClick={() => onPinned({ date: day, state, info })}
             >
               {day.getDate()}
@@ -123,11 +123,11 @@ function MonthCalendar({
   );
 }
 
-function DayDetail({ selected, repoUrl }: { selected: SelectedDay | null; repoUrl: string }) {
-  if (!selected) {
+function DayDetail({ day, repoUrl }: { day: SelectedDay | null; repoUrl: string }) {
+  if (!day) {
     return <div className="cal-detail dim-text">Hover or tap a day for details.</div>;
   }
-  const { date, state, info } = selected;
+  const { date, state, info } = day;
   const dateLabel = date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -162,7 +162,7 @@ function DayDetail({ selected, repoUrl }: { selected: SelectedDay | null; repoUr
 
 export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   const { data, failed } = useUptime();
-  const [selected, setSelected] = useState<SelectedDay | null>(null);
+  const [previewed, setPreviewed] = useState<SelectedDay | null>(null);
   const [pinned, setPinned] = useState<SelectedDay | null>(null);
   const togglePinned = (day: SelectedDay) =>
     setPinned((prev) => (prev && localDayKey(prev.date) === localDayKey(day.date) ? null : day));
@@ -200,7 +200,7 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
 
   const changePage = (delta: number) => {
     setPage((p) => p + delta);
-    setSelected(null);
+    setPreviewed(null);
     setPinned(null);
   };
 
@@ -255,12 +255,12 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
             since={since}
             now={now}
             percent={uptimePercentByMonth(data.windows, first, since, now)}
-            onSelect={setSelected}
+            onHover={setPreviewed}
             onPinned={togglePinned}
           />
         ))}
       </div>
-      <DayDetail selected={pinned ?? selected} repoUrl={repoUrl} />
+      <DayDetail day={pinned ?? previewed} repoUrl={repoUrl} />
       <div className="cal-legend">
         <span>
           <i className="cal-dot ok" /> operational
