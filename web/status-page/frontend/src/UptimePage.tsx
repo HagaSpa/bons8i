@@ -66,13 +66,15 @@ function MonthCalendar({
   now,
   percent,
   onSelect,
+  onPinned,
 }: {
   first: Date; // 月初日（ローカル TZ）
   byDay: Map<string, DayInfo>;
   since: Date;
   now: Date;
   percent: number | null;
-  onSelect: (day: SelectedDay) => void;
+  onSelect: (day: SelectedDay | null) => void;
+  onPinned: (day: SelectedDay) => void;
 }) {
   const monthName = monthLabel(first);
   const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
@@ -108,8 +110,9 @@ function MonthCalendar({
               aria-label={`${localDayKey(day)}: ${STATE_LABEL[state] || "future"}`}
               disabled={state === "future"}
               onMouseEnter={() => onSelect({ date: day, state, info })}
+              onMouseLeave={() => onSelect(null)}
               onFocus={() => onSelect({ date: day, state, info })}
-              onClick={() => onSelect({ date: day, state, info })}
+              onClick={() => onPinned({ date: day, state, info })}
             >
               {day.getDate()}
             </button>
@@ -160,6 +163,10 @@ function DayDetail({ selected, repoUrl }: { selected: SelectedDay | null; repoUr
 export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   const { data, failed } = useUptime();
   const [selected, setSelected] = useState<SelectedDay | null>(null);
+  const [pinned, setPinned] = useState<SelectedDay | null>(null);
+  const togglePinned = (day: SelectedDay) =>
+    setPinned((prev) => (prev && localDayKey(prev.date) === localDayKey(day.date) ? null : day));
+
   // マウント時点の「今」で固定（fetch も mount 時 1 回。レンダーごとに動かさない）
   const [now] = useState(() => new Date());
   const [page, setPage] = useState(0);
@@ -194,6 +201,7 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
   const changePage = (delta: number) => {
     setPage((p) => p + delta);
     setSelected(null);
+    setPinned(null);
   };
 
   return (
@@ -248,10 +256,11 @@ export default function UptimePage({ repoUrl }: { repoUrl: string }) {
             now={now}
             percent={uptimePercentByMonth(data.windows, first, since, now)}
             onSelect={setSelected}
+            onPinned={togglePinned}
           />
         ))}
       </div>
-      <DayDetail selected={selected} repoUrl={repoUrl} />
+      <DayDetail selected={pinned ?? selected} repoUrl={repoUrl} />
       <div className="cal-legend">
         <span>
           <i className="cal-dot ok" /> operational
