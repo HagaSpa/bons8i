@@ -2,10 +2,22 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "timezone": "Asia/Tokyo",
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
   "argocd": {
     "managerFilePatterns": ["/^clusters/pi/argocd/apps/.+\\.yaml$/"]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "dtolnay/rust-toolchain の版指定は branch なので github-tags では追えない。Dockerfile と同じ docker/rust に紐付ける",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.yaml$/"],
+      "matchStrings": ["uses: dtolnay/rust-toolchain@(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"],
+      "depNameTemplate": "rust",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "description": "status page image is managed by the CD pipeline (git SHA tags)",
@@ -14,7 +26,7 @@
     },
     {
       "description": "group app-level minor/patch updates into a single PR (0.x can break on minor, so keep it out)",
-      "matchManagers": ["npm", "cargo", "github-actions", "dockerfile"],
+      "matchManagers": ["npm", "cargo", "github-actions", "dockerfile", "custom.regex"],
       "matchUpdateTypes": ["minor", "patch"],
       "matchCurrentVersion": ">=1.0.0",
       "groupName": "app minor/patch dependencies"
